@@ -1,17 +1,20 @@
 import subprocess
+import json
 import os
 #from piper.voice import PiperVoice
 #import is this but its not working so its cooked and for the program to not crash its gotta be commented out
 #there is an issue with installing piper and theres an issue with deprecations i found a link but didnt have time to look
 #over it investigate here https://github.com/rhasspy/piper/issues/725
 
-#change the file paths based on the spesific locations of the downloads/where your repo is at
-WHISPER_PATH = "/Users/sashaankghanta/whisper.cpp/build/bin/whisper-cli"
-WHISPER_MODEL = "/Users/sashaankghanta/whisper.cpp/models/ggml-base.en.bin"
-PIPER_MODEL = "/Users/sashaankghanta/piper_models/en_US-libritts-high.onnx"
-TEMP_AUDIO = "input.wav"
-TEMP_TRANSCRIPT = "transcript"
-TEMP_RESPONSE = "response.wav"
+with open("config.json", "r") as f:
+    config = json.load(f)
+
+WHISPER_PATH = config["whisper_path"]
+WHISPER_MODEL = config["whisper_model"]
+PIPER_MODEL = config["piper_model"]
+TEMP_AUDIO = config["temp_audio"]
+TEMP_TRANSCRIPT = config["temp_transcript"]
+TEMP_RESPONSE = config["temp_response"]
 
 # the -i is telling it to using input device :1 which for my macbook is the mic but could be diffrent for everyone
 #run the command ffmpeg -f avfoundation -list_devices true -i ""
