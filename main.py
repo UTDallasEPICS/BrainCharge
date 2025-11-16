@@ -2,24 +2,92 @@ import subprocess
 import json
 import os
 import time
+import platform
 from datetime import datetime
 
-# Load configuration
-with open("config.json", "r") as f:
+CONFIG_PATH = "config.json"
+
+if not os.path.exists(CONFIG_PATH):
+    raise FileNotFoundError(f"Config file not found: {CONFIG_PATH}")
+
+with open(CONFIG_PATH, "r") as f:
     config = json.load(f)
 
 WHISPER_PATH = config["whisper_path"]
 WHISPER_MODEL = config["whisper_model"]
 PIPER_MODEL = config.get("piper_model", "")
+
 TEMP_AUDIO = config["temp_audio"]
 TEMP_TRANSCRIPT = config["temp_transcript"]
 TEMP_RESPONSE = config.get("temp_response", "response.wav")
+
 CONTEXT_FILE = config.get("context_file", "conversation_context.json")
 SUMMARY_FILE = config.get("summary_file", "conversation_summary.json")
+
 WAKE_WORD = config.get("wake_word", "companion").lower()
 SLEEP_WORD = config.get("sleep_word", "bye companion").lower()
+
+
+#need to look into how not not limit conversation duration and base it on when the user stops talking
 LISTEN_DURATION = config.get("listen_duration", 3)
 CONVERSATION_DURATION = config.get("conversation_duration", 5)
+
+
+def get_audio_input_command(duration, output_file):
+    """Get OS-specific ffmpeg audio recording command."""
+
+    system = platform.system()
+
+   #mac
+   #mac testing comamnd to figure out mic ffmpeg -f avfoundation -list_devices true -i ""
+    if system == "Darwin":
+        return [
+            "ffmpeg",
+            "-f", "avfoundation",
+            "-i", ":1",      
+            "-t", str(duration),
+            output_file,
+            "-y"
+        ]
+
+    #windows
+    #ffmpeg -list_devices true -f dshow -i dummy
+    elif system == "Windows":
+        return [
+            "ffmpeg",
+            "-f", "dshow",
+            "-i", "audio=Microphone (Realtek Audio)",  # ur windows mic can be diff check using comamnd
+            "-t", str(duration),
+            output_file,
+            "-y"
+        ]
+
+    #linux need to test pluse audio vs alsa and check if the extra latency is fine as alsa
+    #is the lower overhead but more comptible and easier to use need to test and reserch
+
+    #also need to look into the command
+    else:
+        if os.path.exists("/usr/bin/pulseaudio") or os.path.exists("/usr/bin/pactl"):
+            #pulse
+            return [
+                "ffmpeg",
+                "-f", "pulse",
+                "-i", "default",
+                "-t", str(duration),
+                output_file,
+                "-y"
+            ]
+        else:
+            #ALSA
+            return [
+                "ffmpeg",
+                "-f", "alsa",
+                "-i", "default",
+                "-t", str(duration),
+                output_file,
+                "-y"
+            ]
+
 
 class ConversationContext:
     """Manages conversation history and context with AI summarization"""
@@ -67,12 +135,6 @@ class ConversationContext:
             "assistant": assistant_response
         })
         self.save_context()
-        
-        # Trigger summarization every 10 exchanges
-        #if len(self.history) % 10 == 0:
-            #print("\n Generating conversation summary...")
-            #self.generate_summary()
-        #replaced with a sleep based summarization
     
     def generate_summary(self):
         """Use Ollama to summarize the conversation and extract key information"""
@@ -83,7 +145,6 @@ class ConversationContext:
         if not self.history:
             return
         
-        # Build conversation text for summarization
         conversation_text = "Conversation history:\n\n"
         for exchange in self.history:
             conversation_text += f"[{exchange['timestamp']}]\n"
@@ -120,14 +181,12 @@ class ConversationContext:
             
             summary_text = result.stdout.strip()
             
-            # Try to extract JSON from response
-            # Remove markdown code blocks if present
             if "```json" in summary_text:
                 summary_text = summary_text.split("```json")[1].split("```")[0].strip()
             elif "```" in summary_text:
                 summary_text = summary_text.split("```")[1].split("```")[0].strip()
             
-            # Parse JSON
+            
             self.summary = json.loads(summary_text)
             self.summary["last_updated"] = datetime.now().isoformat()
             self.save_summary()
@@ -148,7 +207,6 @@ class ConversationContext:
         """Build context string using AI summary and recent exchanges"""
         context_str = ""
         
-        # Include AI summary if available
         if self.summary:
             context_str += "\n=== Conversation Summary ===\n"
             
@@ -201,16 +259,20 @@ class ConversationContext:
         self.save_summary()
 
 def record_audio(duration, output_file):
-    """Record audio for specified duration"""
+    """Record audio using ffmpeg with OS detection."""
     try:
-        subprocess.run([
-            "ffmpeg", "-f", "avfoundation", "-i", ":1", 
-            "-t", str(duration), output_file, "-y"
-        ], check=True, capture_output=True)
+        cmd = get_audio_input_command(duration, output_file)
+        subprocess.run(cmd, check=True, capture_output=True)
         return True
+
     except subprocess.CalledProcessError as e:
-        print(f"Error recording audio: {e}")
+        print(f"FFmpeg recording error:\n{e.stderr.decode() if e.stderr else e}")
         return False
+
+    except Exception as e:
+        print(f"Unexpected audio recording error: {e}")
+        return False
+
 
 def transcribe_audio(audio_file):
     """Transcribe audio using Whisper"""
@@ -286,12 +348,12 @@ def continuous_conversation(context):
     while conversation_active:
         print("\n Listening for your message...")
         
-        # Record user input
+        
         if not record_audio(CONVERSATION_DURATION, TEMP_AUDIO):
             speak_response("I didn't hear you clearly. Could you repeat that?")
             continue
         
-        # Transcribe
+        
         user_input = transcribe_audio(TEMP_AUDIO)
         if not user_input:
             speak_response("I didn't catch that. Please say that again.")
@@ -299,7 +361,7 @@ def continuous_conversation(context):
         
         print(f"You said: {user_input}")
         
-        # Check for sleep word
+        
         if check_for_sleep_word(user_input):
             print(f"\n Sleep word '{SLEEP_WORD}' detected!")
 
@@ -312,17 +374,17 @@ def continuous_conversation(context):
             conversation_active = False
             break
         
-        # Generate response with context
+        
         response = generate_response(user_input, context)
         print(f"Assistant: {response}\n")
         
-        # Save to context
+       
         context.add_exchange(user_input, response)
         
-        # Speak response
+        
         speak_response(response)
         
-        # Small pause before listening again
+        
         time.sleep(0.5)
 
 def main():
@@ -332,10 +394,10 @@ def main():
     print(f"Sleep word: '{SLEEP_WORD}' - Say this to end the conversation")
     print("Press Ctrl+C to exit")
     
-    # Initialize context with summary support
+    
     context = ConversationContext(CONTEXT_FILE, SUMMARY_FILE)
     
-    # Load existing context on startup
+    
     if context.history:
         print(f"\n Loaded {len(context.history)} previous exchanges")
     if context.summary:
@@ -349,26 +411,26 @@ def main():
         while True:
             print("\n Sleeping mode - Listening for wake word...")
             
-            # Record short audio clip
+           
             if not record_audio(LISTEN_DURATION, TEMP_AUDIO):
                 time.sleep(1)
                 continue
             
-            # Transcribe
+           
             transcription = transcribe_audio(TEMP_AUDIO)
             
             if transcription:
                 print(f"Heard: {transcription}")
                 
-                # Check for wake word
+                
                 if check_for_wake_word(transcription):
                     print(f"\n Wake word detected! Entering conversation mode...\n")
                     continuous_conversation(context)
-                    # After conversation ends, return to listening for wake word
+                   
                     print("\n Returning to sleep mode...")
                     time.sleep(1)
             
-            # Small delay to prevent overwhelming the system
+            
             time.sleep(0.5)
     
     except KeyboardInterrupt:
