@@ -4,6 +4,8 @@ import os
 import time
 import platform
 from datetime import datetime
+import torch
+from TTS.api import TTS
 
 CONFIG_PATH = "config.json"
 
@@ -15,7 +17,6 @@ with open(CONFIG_PATH, "r") as f:
 
 WHISPER_PATH = config["whisper_path"]
 WHISPER_MODEL = config["whisper_model"]
-PIPER_MODEL = config.get("piper_model", "")
 
 TEMP_AUDIO = config["temp_audio"]
 TEMP_TRANSCRIPT = config["temp_transcript"]
@@ -27,6 +28,9 @@ SUMMARY_FILE = config.get("summary_file", "conversation_summary.json")
 WAKE_WORD = config.get("wake_word", "companion").lower()
 SLEEP_WORD = config.get("sleep_word", "bye companion").lower()
 
+DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+TTS_MODEL = TTS(config["tts_model"]).to(DEVICE)
+SPEAKER = TTS_MODEL.speakers[0]
 
 #need to look into how not not limit conversation duration and base it on when the user stops talking
 LISTEN_DURATION = config.get("listen_duration", 3)
@@ -273,7 +277,6 @@ def record_audio(duration, output_file):
         print(f"Unexpected audio recording error: {e}")
         return False
 
-
 def transcribe_audio(audio_file):
     """Transcribe audio using Whisper"""
     try:
@@ -326,7 +329,9 @@ def generate_response(user_input, context):
 def speak_response(text):
     """Speak the response using eSpeak"""
     try:
-        subprocess.run(["espeak", text], check=True, capture_output=True)
+        TTS_MODEL.tts_to_file(
+            text=text, speaker=SPEAKER, language="en", file_path=TEMP_RESPONSE)
+        subprocess.run(["afplay", TEMP_RESPONSE], check=True, capture_output=True)
     except Exception as e:
         print(f"Error speaking response: {e}")
 
