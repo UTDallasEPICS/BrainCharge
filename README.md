@@ -62,38 +62,38 @@ Voice-enabled companion robot with conversation memory, facial recognition, and 
      cd ../..
      ```
 
-4. **Configure audio device** (optional, auto-detects by default)
+4. **Create your config.json file**
+   ```bash
+   cp config.json.example config.json
+   ```
+   The paths auto-detect based on your OS, so no manual changes needed unless you have a custom setup.
+
+5. **Optional: Configure audio device for advanced control**
    ```bash
    python select_audio_device.py
    ```
-   This creates a `.env` file with your chosen microphone.
+   This creates a `.env` file with your chosen microphone (works alongside config.json).
 
 ### Configuration
 
-All settings can be customized via environment variables or a `.env` file:
+The project uses **config.json** for main settings (auto-detects OS-specific paths) and optionally **.env** for audio device overrides.
 
-```bash
-# Audio Recording
-FFMPEG_FORMAT=wasapi          # wasapi (Windows), dshow (Windows), avfoundation (macOS), alsa (Linux)
-FFMPEG_DEVICE=default         # Device name/identifier
-RECORD_SECONDS=5              # Recording duration
-
-# Whisper.cpp paths (auto-detected by default)
-WHISPER_PATH=./whisper.cpp/build/bin/Release/whisper-cli.exe  # Windows
-# WHISPER_PATH=./whisper.cpp/build/bin/whisper-cli            # macOS/Linux
-WHISPER_MODEL=./whisper.cpp/models/ggml-base.en.bin
-
-# Ollama
-OLLAMA_MODEL=gemma3:4b        # Any Ollama model
-
-# Temp files
-TEMP_AUDIO=input.wav
-TEMP_TRANSCRIPT=transcript
-TEMP_RESPONSE=response.wav
+**config.json** (copy from config.json.example):
+```json
+{
+  "whisper_path_windows": "whisper.cpp/build/bin/Release/whisper-cli.exe",
+  "whisper_path_mac": "whisper.cpp/build/bin/whisper-cli",
+  "whisper_path_linux": "whisper.cpp/build/bin/whisper-cli",
+  "whisper_model": "whisper.cpp/models/ggml-base.en.bin",
+  
+  "wake_word": "companion",
+  "sleep_word": "bye companion",
+  "listen_duration": 3,
+  "conversation_duration": 5
+}
 ```
 
-### Create a `.env` file (optional)
-
+**Optional .env** for audio device customization:
 ```bash
 # Example .env for Windows with custom device
 FFMPEG_FORMAT=dshow

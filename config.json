@@ -1,0 +1,20 @@
+{
+  "_comment": "Paths are relative to repo root. On macOS/Linux use forward slashes, Windows will convert automatically",
+  "whisper_path_windows": "whisper.cpp/build/bin/Release/whisper-cli.exe",
+  "whisper_path_mac": "whisper.cpp/build/bin/whisper-cli",
+  "whisper_path_linux": "whisper.cpp/build/bin/whisper-cli",
+  "whisper_model": "whisper.cpp/models/ggml-base.en.bin",
+  "piper_model": "",
+  "temp_audio": "input.wav",
+  "temp_transcript": "transcript",
+  "temp_response": "response.wav",
+
+  "context_file": "conversation_context.json",
+  "summary_file": "conversation_summary.json",
+
+  "wake_word": "companion",
+  "sleep_word": "bye companion",
+
+  "listen_duration": 3,
+  "conversation_duration": 5
+}
