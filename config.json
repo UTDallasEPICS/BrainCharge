@@ -4,5 +4,14 @@
   "piper_model": "/Users/sashaankghanta/piper_models/en_US-libritts-high.onnx",
   "temp_audio": "input.wav",
   "temp_transcript": "transcript",
-  "temp_response": "response.wav"
+  "temp_response": "response.wav",
+
+  "context_file": "conversation_context.json",
+  "summary_file": "conversation_summary.json",
+
+  "wake_word": "companion",
+  "sleep_word": "bye companion",
+
+  "listen_duration": 3,
+  "conversation_duration": 5
 }
