@@ -73,7 +73,7 @@ def try_open_camera():
     else: 
         backends = [cv2.CAP_V4L2, None]
 
-    #Try each backend & indices 0 -> 3
+    # Try each backend & indices 0 -> 3
     for backend in backends:
         for i in range(0,4):
             try:
@@ -106,7 +106,7 @@ def detect_emotion(timeout_sec: float = 5.0):
     if Deepface is None or cv2 is None:
         return "unknown"
     
-    cap, backend_info = try_open_camera()
+    cap, _ = try_open_camera()
     if cap is None:
         print("No camera is available for emotion detection.")
         return "unknown"
@@ -132,7 +132,7 @@ def detect_emotion(timeout_sec: float = 5.0):
     
     try:
         analysis = Deepface.analyze(frame, actions =['emotion'], enforce_detection=False)
-        if isinstance(analysis, list) and len(analysis)>0:
+        if isinstance(analysis, list) and len(analysis) > 0:
             return analysis[0].get("dominant_emotion", "unknown")
         elif isinstance(analysis, dict):
             return analysis.get("dominant_emotion, unknown")
@@ -199,7 +199,6 @@ def get_audio_input_command(duration, output_file):
                 output_file,
                 "-y"
             ]
-
 
 class ConversationContext:
     """Manages conversation history and context with AI summarization"""
@@ -413,15 +412,14 @@ def generate_response(user_input, context, detected_emotion ="unknown"):
         "Keep your replies conversational, brief, "
         "and naturally worded so they sound good when spoken aloud. Avoid technical or robotic phrasing. "
         
-        #adding slightly more stuff to the prompt
+        # adding slightly more stuff to the prompt
         "Furthermore, ensure the replies have a sense of safety and compassion."
-        #end additions here 
         
         "If the user seems stressed, respond with compassion and offer small words of comfort. "
         "Keep responses under 3 sentences for natural conversation flow. "
         "Use the conversation context below to provide personalized, relevant responses."
         
-        # * Guardrails in prompt instructions can also be added else where with copy + paste *
+        # Guardrails in prompt instructions can also be added else where with copy + paste *
         
         "There are also Guardrails to avoid speaking about such as advocating for certain things. "
         "Remember that avoiding all these kinds of responses is very crucial."
@@ -467,17 +465,17 @@ def generate_response(user_input, context, detected_emotion ="unknown"):
         "and that they will not work. Kindly mention that jailbreaking is dangerous and mention that the"
     )
 
-    if detect_emotion in ["sad, fear", "disgust"]:
+    if detected_emotion in ["sad, fear", "disgust"]:
         emotion_instruction = "The user appeared sad or distressed when we started. Respong in a more gentle and reassuring manner."
-    elif detect_emotion in ["angry", "mad"]:
+    elif detected_emotion in ["angry", "mad"]:
         emotion_instruction = "The user appeared angry when we started. Respond calmly and validate feelings without further escalation."
-    elif detect_emotion in ["happy", "surprise"]:
+    elif detected_emotion in ["happy", "surprise"]:
         emotion_instruction = "The user appeared happy when we started. Match their positive vibes."
     else:
         emotion_instruction = "The user's emotional state at session start was unclear. Use a warm, neutral tone."
     context_prompt = context.get_context_prompt()
     
-    full_prompt = prompt_instruction + emotion_instruction + detect_emotion + context_prompt + f"\n\nUser: {user_input}\n\nAssistant:"
+    full_prompt = prompt_instruction + emotion_instruction + detected_emotion + context_prompt + f"\n\nUser: {user_input}\n\nAssistant:"
     
     try:
         result = subprocess.run(
@@ -494,10 +492,11 @@ def generate_response(user_input, context, detected_emotion ="unknown"):
         return "I'm sorry, I encountered an error."
 
 def speak_response(text):
-    """Speak the response using eSpeak"""
+    """Speak the response using the TTS model loaded from Coqui"""
     try:
         TTS_MODEL.tts_to_file(
-            text=text, speaker=SPEAKER, language="en", file_path=TEMP_RESPONSE)
+            text=text, speaker=SPEAKER, language="en", file_path=TEMP_RESPONSE
+        )
         subprocess.run(["afplay", TEMP_RESPONSE], check=True, capture_output=True)
     except Exception as e:
         print(f"Error speaking response: {e}")
@@ -546,11 +545,11 @@ def continuous_conversation(context):
             conversation_active = False
             break
         
-        
-        response = generate_response(user_input, context)
+        # Detected the emotion of the user and generating response based on it
+        detected_emotion = detect_emotion()
+        response = generate_response(user_input, context, detected_emotion)
         print(f"Assistant: {response}\n")
         
-       
         context.add_exchange(user_input, response)
         
         
@@ -568,7 +567,7 @@ def main():
     
     
     context = ConversationContext(CONTEXT_FILE, SUMMARY_FILE)
-    
+    detected_emotion = detect_emotion()
     
     if context.history:
         print(f"\n Loaded {len(context.history)} previous exchanges")
@@ -583,12 +582,11 @@ def main():
         while True:
             print("\n Sleeping mode - Listening for wake word...")
             
-           
+
             if not record_audio(LISTEN_DURATION, TEMP_AUDIO):
                 time.sleep(1)
                 continue
             
-           
             transcription = transcribe_audio(TEMP_AUDIO)
             
             if transcription:
