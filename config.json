@@ -1,7 +1,7 @@
 {
-  "whisper_path": "/Users/sashaankghanta/whisper.cpp/build/bin/whisper-cli",
-  "whisper_model": "/Users/sashaankghanta/whisper.cpp/models/ggml-base.en.bin",
-  "piper_model": "/Users/sashaankghanta/piper_models/en_US-libritts-high.onnx",
+  "whisper_path": "/Users/sahot/oneDrive/Desktop/textbooks+Slides/EPICS/EPICS_SPRING25/Code/BrainCharge_Update/BrainCharge/whisper.cpp/build/bin/whisper-cli",
+  "whisper_model": "/Users/sahot/oneDrive/Desktop/textbooks+Slides/EPICS/EPICS_SPRING25/Code/BrainCharge_Update/BrainCharge/whisper.cpp/models/ggml-base.en.bin",
+  "piper_model": "/Users/sahot/oneDrive/Desktop/textbooks+Slides/EPICS/EPICS_SPRING25/Code/BrainCharge_Update/BrainCharge/piper_models/en_US-libritts-high.onnx",
   "temp_audio": "input.wav",
   "temp_transcript": "transcript",
   "temp_response": "response.wav",
