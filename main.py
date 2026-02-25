@@ -348,9 +348,65 @@ def generate_response(user_input, context):
         return "I'm sorry, I encountered an error."
 
 def speak_response(text):
-    """Speak the response using eSpeak"""
+    """Speak the response using a cross-platform TTS.
+
+    On Windows: use PowerShell System.Speech (no external dependency).
+    On macOS: use `say`.
+    On Linux: try `espeak` then `spd-say`. If no TTS available, print a helpful message.
+    """
     try:
-        subprocess.run(["espeak", text], check=True, capture_output=True)
+        system = platform.system()
+
+        if system == "Windows":
+            # Use PowerShell's System.Speech.Synthesis.SpeechSynthesizer
+            # To avoid any quoting or Unicode parsing issues, send the speech text via stdin
+            # and read it inside PowerShell with [Console]::In.ReadToEnd(). This prevents
+            # embedded quotes or smart apostrophes from breaking the command parsing.
+            ps_cmd = (
+                "Add-Type -AssemblyName System.Speech; "
+                "$s = New-Object System.Speech.Synthesis.SpeechSynthesizer; "
+                "$s.Speak([Console]::In.ReadToEnd())"
+            )
+            cmd = ["powershell", "-NoProfile", "-Command", ps_cmd]
+            # Pass the text on stdin; use UTF-8 encoding so Unicode is preserved.
+            subprocess.run(cmd, input=text, encoding='utf-8', check=True, capture_output=True)
+
+        elif system == "Darwin":
+            # macOS `say` utility
+            subprocess.run(["say", text], check=True, capture_output=True)
+
+        else:
+            # Try common Linux TTS utilities
+            tried = False
+            try:
+                subprocess.run(["espeak", text], check=True, capture_output=True)
+                tried = True
+            except FileNotFoundError:
+                pass
+            except subprocess.CalledProcessError:
+                # espeak exists but failed; continue to try other options
+                tried = True
+
+            if not tried:
+                try:
+                    subprocess.run(["spd-say", text], check=True, capture_output=True)
+                    tried = True
+                except FileNotFoundError:
+                    pass
+                except subprocess.CalledProcessError:
+                    tried = True
+
+            if not tried:
+                # No TTS backend available
+                print("TTS not available: install 'espeak' or 'spd-say', or configure a TTS engine. Response:\n", text)
+
+    except subprocess.CalledProcessError as e:
+        # TTS command found but returned non-zero exit code
+        stderr = e.stderr.decode() if e.stderr else str(e)
+        print(f"TTS command failed: {stderr}")
+    except FileNotFoundError as e:
+        # Command not found (e.g., powershell not found, unlikely on Windows)
+        print(f"TTS command not found: {e}")
     except Exception as e:
         print(f"Error speaking response: {e}")
 
