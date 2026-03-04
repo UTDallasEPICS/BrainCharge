@@ -2,31 +2,33 @@ from deepface import DeepFace
 import cv2
 import os
 import warnings
-
-# Suppress TensorFlow messages
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # 0=all, 1=INFO, 2=WARNING, 3=ERROR
-os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'  # Disable oneDNN messages
-
-# Suppress Python warnings
-warnings.filterwarnings('ignore')
-
-# Now import TensorFlow and other libraries
+from pathlib import Path
 import tensorflow as tf
 
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # 0=all, 1=INFO, 2=WARNING, 3=ERROR
+os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'  # Disable oneDNN messages
+warnings.filterwarnings('ignore')
 
+parent_name = r"C:\Users\sahot\OneDrive\Desktop\textbooks+Slides\EPICS\spring26\code\BrainCharge_Update\BrainCharge"
+directory_name = "picturefile"
 
+parent_path = Path(parent_name)
+child_path = parent_path / directory_name
 
-# Initialize the webcam (0 for default webcam)
+child_path.mkdir(parents=True, exist_ok=True)
+print(f"Image folder ready at: {child_path}")
+
 cap = None
 camera_found = False
+
 print("Trying DirectShow backend...")
 cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
+
 if cap.isOpened():
     camera_found = True
     print("Cam found with DirectShow.")
 else:
     cap.release()
-
     print("Trying different backend with different camera indices")
     for i in range(3):
         print(f"Trying camera index [i]...")
@@ -45,23 +47,21 @@ if not camera_found:
     print("3. No other application is using camera")
     exit()
     
-# Capture a single frame
+
 ret, frame = cap.read()
 
 if ret:
-    # Save the captured frame as an image file
-    cv2.imwrite("captured_image.jpg", frame)
-    print("Image captured and saved as 'captured_image.jpg'")
+    image_path = child_path / "captured_image.jpg"
+    cv2.imwrite(str(image_path), frame)
+    print(f"Image saved to: {image_path}")
 else:
     print("Error: Could not read frame from webcam.")
 
-# Release the webcam
+
 cap.release()
 cv2.destroyAllWindows()
 
-img = cv2.imread("captured_image.jpg")
-
-gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+img = cv2.imread(str(image_path))
 
 try: 
     analysis = DeepFace.analyze(img, actions=['emotion'], enforce_detection=False)
@@ -81,7 +81,14 @@ except Exception as e:
     
     dominant_emotion = f"Error during emotional analysis {e}"
     cv2.putText(frame, dominant_emotion, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
-    
+
+
+
+
 cv2.imshow('Captured Image with emotion', frame)
 cv2.waitKey(0)
+final_image_path = child_path / "analyzed_image.jpg"
+cv2.imwrite(str(final_image_path), frame)
 cv2.destroyAllWindows()
+
+print(f"Final analyzed image saved to: {final_image_path}")
