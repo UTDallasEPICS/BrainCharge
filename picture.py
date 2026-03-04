@@ -3,7 +3,6 @@ import cv2
 import os
 import warnings
 from pathlib import Path
-import tensorflow as tf
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # 0=all, 1=INFO, 2=WARNING, 3=ERROR
 os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'  # Disable oneDNN messages

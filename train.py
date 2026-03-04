@@ -25,17 +25,22 @@ def get_acc(model, data_loader, arg_device) -> float:
 
 
 def save_model(arg_model, optimizer, scheduler):
-    torch.save(arg_model.state_dict(), '/params/emotion_model_checkpoint.pth')
     torch.save({
+        "model": arg_model.state_dict(),
         "optimizer": optimizer.state_dict(),
         "scheduler": scheduler.state_dict()
     },
-    '/params/emotion_other.pth')
+    './params/emotion_model.pth')
 
 
-def train(
-    num_epochs, arg_model, train_dataloader, val_dataloader, loss_fn, optimizer, scheduler, device
-):
+def load_model(arg_model, optimizer, scheduler, device):
+    checkpoint = torch.load('/params/emotion_model_checkpoint.pth', map_location=device)
+    arg_model.load_state_dict(checkpoint["model"])
+    optimizer.load_state_dict(checkpoint["optimizer"])
+    scheduler.load_state_dict(checkpoint["scheduler"])
+
+
+def train(num_epochs, arg_model, train_dataloader, val_dataloader, loss_fn, optimizer, scheduler, device):
     for epoch in range(num_epochs):
         avg_train_loss, avg_val_loss = 0.0, 0.0
 
@@ -77,30 +82,42 @@ def train(
         print(f"Train loss: {avg_train_loss:.4f}, val loss: {avg_val_loss:.4f}")
         print(f"Train acc: {train_acc:.4f}, val acc: {val_acc:.4f}")
 
-torch.cuda.empty_cache()
-device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+def main():
+    # Comment this out if you want to empty the cache
+    torch.cuda.empty_cache()
+    device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
-# Sample stuff
-resnet = get_resnet().to(device)
-OPTIMIZER = optim.SGD(resnet.parameters(), lr=1e-2, momentum=0.9, weight_decay=1e-4)
-SCHEDULER = lr_scheduler.CosineAnnealingLR(OPTIMIZER, T_max=60, eta_min=1e-5)
+    # Sample stuff
+    resnet = get_resnet().to(device)
+    optimizer = optim.SGD(
+        resnet.parameters(), 
+        lr=1e-2, 
+        momentum=0.9, 
+        weight_decay=1e-4
+    )
+    scheduler = lr_scheduler.CosineAnnealingLR(
+        optimizer, 
+        T_max=60, 
+        eta_min=1e-5
+    )
 
-# Data loader
-train_fer2013 = FER2013(set_type="train")
-val_fer2013 = FER2013(set_type="val")
+    # Data loader
+    train_fer2013 = FER2013(set_type="train")
+    val_fer2013 = FER2013(set_type="val")
 
-TRAIN_DATALOADER = DataLoader(train_fer2013, batch_size=128, shuffle=True, num_workers=2)
-VAL_DATALOADER = DataLoader(val_fer2013, batch_size=128, shuffle=False, num_workers=2)
+    train_dataloader = DataLoader(train_fer2013, batch_size=128, shuffle=True)
+    val_dataloader = DataLoader(val_fer2013, batch_size=128, shuffle=False)
 
-NUM_EPOCHS = 60
+    NUM_EPOCHS = 60
 
-train(
-    num_epochs=NUM_EPOCHS,
-    arg_model=resnet,
-    train_dataloader=TRAIN_DATALOADER,
-    val_dataloader=VAL_DATALOADER,
-    loss_fn=nn.CrossEntropyLoss(label_smoothing=0.1),
-    optimizer=OPTIMIZER,
-    scheduler=SCHEDULER
-)
-
+    load_model(resnet, optimizer, scheduler)
+    train(
+        num_epochs=NUM_EPOCHS,
+        arg_model=resnet,
+        train_dataloader=train_dataloader,
+        val_dataloader=val_dataloader,
+        loss_fn=nn.CrossEntropyLoss(label_smoothing=0.1),
+        optimizer=optimizer,
+        scheduler=scheduler
+    )
+    save_model(resnet, optimizer, scheduler)
