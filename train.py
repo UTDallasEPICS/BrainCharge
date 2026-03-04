@@ -7,24 +7,6 @@ from torch import nn
 from cv_model import get_resnet, turn_off_batchnorm
 from fer2013 import FER2013
 
-torch.cuda.empty_cache()
-device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-
-# Sample stuff
-resnet = get_resnet().to(device)
-loss_fn = nn.CrossEntropyLoss(label_smoothing=0.1)
-optimizer = optim.SGD(resnet.parameters(), lr=1e-2, momentum=0.9, weight_decay=1e-4)
-scheduler = lr_scheduler.CosineAnnealingLR(optimizer, T_max=60, eta_min=1e-5)
-
-# Data loader
-train_fer2013 = FER2013(set_type="train")
-val_fer2013 = FER2013(set_type="val")
-
-train_dataloader = DataLoader(train_fer2013, batch_size=128, shuffle=True, num_workers=2)
-val_dataloader = DataLoader(val_fer2013, batch_size=128, shuffle=False, num_workers=2)
-
-num_epochs = 60
-
 @torch.no_grad()
 def get_acc(model, data_loader, arg_device) -> float:
     model.eval()
@@ -42,50 +24,83 @@ def get_acc(model, data_loader, arg_device) -> float:
     return (correct / total) * 100
 
 
-for epoch in range(num_epochs):
-    avg_train_loss, avg_val_loss = 0.0, 0.0
+def save_model(arg_model, optimizer, scheduler):
+    torch.save(arg_model.state_dict(), '/params/emotion_model_checkpoint.pth')
+    torch.save({
+        "optimizer": optimizer.state_dict(),
+        "scheduler": scheduler.state_dict()
+    },
+    '/params/emotion_other.pth')
 
-    resnet.train()
-    turn_off_batchnorm(resnet)
 
-    for imgs, labels in train_dataloader:
-        imgs, labels = imgs.to(device), labels.to(device)
-        optimizer.zero_grad()
+def train(
+    num_epochs, arg_model, train_dataloader, val_dataloader, loss_fn, optimizer, scheduler, device
+):
+    for epoch in range(num_epochs):
+        avg_train_loss, avg_val_loss = 0.0, 0.0
 
-        outputs = resnet(imgs)
-        train_loss = loss_fn(outputs, labels)
-        train_loss.backward()
-        optimizer.step()
+        arg_model.train()
+        turn_off_batchnorm(arg_model)
 
-        avg_train_loss += train_loss.item()
-
-    avg_train_loss /= len(train_dataloader)
-    train_acc = get_acc(resnet, train_dataloader, device)
-
-    resnet.eval()
-    with torch.no_grad():
-        for imgs, labels in val_dataloader:
+        for imgs, labels in train_dataloader:
             imgs, labels = imgs.to(device), labels.to(device)
             optimizer.zero_grad()
 
-            outputs = resnet(imgs)
-            val_loss = loss_fn(outputs, labels)
+            outputs = arg_model(imgs)
+            train_loss = loss_fn(outputs, labels)
+            train_loss.backward()
+            optimizer.step()
 
-            avg_val_loss += val_loss.item()
+            avg_train_loss += train_loss.item()
 
-        avg_val_loss /= len(val_dataloader)
-        val_acc = get_acc(resnet, val_dataloader, device)
+        avg_train_loss /= len(train_dataloader)
+        train_acc = get_acc(arg_model, train_dataloader, device)
 
-    # Scheduling the learning rate after one epoch of training
-    scheduler.step()
+        arg_model.eval()
+        with torch.no_grad():
+            for imgs, labels in val_dataloader:
+                imgs, labels = imgs.to(device), labels.to(device)
+                optimizer.zero_grad()
 
-    print(f"Epoch {epoch + 1}/{num_epochs},")
-    print(f"Train loss: {avg_train_loss:.4f}, val loss: {avg_val_loss:.4f}")
-    print(f"Train acc: {train_acc:.4f}, val acc: {val_acc:.4f}")
+                outputs = arg_model(imgs)
+                val_loss = loss_fn(outputs, labels)
 
-torch.save(resnet.state_dict(), '/params/emotion_model_checkpoint.pth')
-torch.save({
-    "optimizer": optimizer.state_dict(),
-    "scheduler": scheduler.state_dict()
-},
-'/params/emotion_other.pth')
+                avg_val_loss += val_loss.item()
+
+            avg_val_loss /= len(val_dataloader)
+            val_acc = get_acc(arg_model, val_dataloader, device)
+
+        # Scheduling the learning rate after one epoch of training
+        scheduler.step()
+
+        print(f"Epoch {epoch + 1}/{num_epochs},")
+        print(f"Train loss: {avg_train_loss:.4f}, val loss: {avg_val_loss:.4f}")
+        print(f"Train acc: {train_acc:.4f}, val acc: {val_acc:.4f}")
+
+torch.cuda.empty_cache()
+device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+
+# Sample stuff
+resnet = get_resnet().to(device)
+OPTIMIZER = optim.SGD(resnet.parameters(), lr=1e-2, momentum=0.9, weight_decay=1e-4)
+SCHEDULER = lr_scheduler.CosineAnnealingLR(OPTIMIZER, T_max=60, eta_min=1e-5)
+
+# Data loader
+train_fer2013 = FER2013(set_type="train")
+val_fer2013 = FER2013(set_type="val")
+
+TRAIN_DATALOADER = DataLoader(train_fer2013, batch_size=128, shuffle=True, num_workers=2)
+VAL_DATALOADER = DataLoader(val_fer2013, batch_size=128, shuffle=False, num_workers=2)
+
+NUM_EPOCHS = 60
+
+train(
+    num_epochs=NUM_EPOCHS,
+    arg_model=resnet,
+    train_dataloader=TRAIN_DATALOADER,
+    val_dataloader=VAL_DATALOADER,
+    loss_fn=nn.CrossEntropyLoss(label_smoothing=0.1),
+    optimizer=OPTIMIZER,
+    scheduler=SCHEDULER
+)
+
