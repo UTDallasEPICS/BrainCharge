@@ -13,6 +13,7 @@ from cv_model import get_resnet
 DEVICE: device = "cuda" if cuda.is_available() else "cpu"
 FILEPATH = "./yolov8n-face-lindevs.pt"
 AVAILABLE_EMOTIONS = ["Angry", "Disgust", "Fear", "Happy", "Sad", "Surprise", "Neutral"]
+TEXT_COLOR = cv2.FONT_HERSHEY_SIMPLEX
 
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # 0=all, 1=INFO, 2=WARNING, 3=ERROR
@@ -107,31 +108,36 @@ def cv_pipeline(camera: cv2.VideoCapture, face_detector: YOLO, emotion_classifie
             x1, y1, x2, y2 = map(int, boxes[0])
             emotion = analysis[0]['dominant_emotion']
 
-            face_region = image[y1:y2, x1:x2]
             # Feed to emotion classifier
+            face_region = image[y1:y2, x1:x2]
             output = emotion_classifier(convert_to_tensor(face_region, DEVICE))
             _, label = torch.max(output, dim=1)
             emotion = AVAILABLE_EMOTIONS[label.numpy()[0]]
 
             cv2.rectangle(image, (x1, y1), (x2, y2), (0, 255, 0), 2)
-            cv2.putText(image, emotion, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
+            cv2.putText(image, emotion, (10, 30), TEXT_COLOR, 0.9, (0, 255, 0), 2)
         else: 
             emotion = "No face/emotion detected/determined"
-            cv2.putText(image, emotion, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+            cv2.putText(image, emotion, (10, 30), TEXT_COLOR, 0.7, (0, 0, 255), 2)
             
     except Exception as e:
         emotion = f"Error during emotional analysis {e}"
-        cv2.putText(image, emotion, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+        cv2.putText(image, emotion, (10, 30), TEXT_COLOR, 0.7, (0, 0, 255), 2)
 
     image_path = child_path / "analyzed_image.jpg"
     cv2.imwrite(str(image_path), image)
 
     print(f"Final analyzed image saved to: {image_path}")
 
-if __name__ == "__main__":
+
+def main():
+    # This is to test the workflow
     face_detector = get_face_detector(FILEPATH, DEVICE)
     animal_classifier = get_resnet().to(DEVICE).eval()
 
     camera = turn_on_camera()
     cv_pipeline(camera, face_detector, animal_classifier)
     turn_off_camera(camera)
+
+if __name__ == "__main__": 
+    main()
