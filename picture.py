@@ -111,11 +111,11 @@ def cv_pipeline(camera: cv2.VideoCapture, face_detector: YOLO, emotion_classifie
             # Feed to emotion classifier
             face_region = image[y1:y2, x1:x2]
             output = emotion_classifier(convert_to_tensor(face_region, DEVICE))
-            _, label = torch.max(output, dim=1)
-            emotion = AVAILABLE_EMOTIONS[label.numpy()[0]]
+            _, top_labels = torch.topk(output, 3)
+            emotions = [AVAILABLE_EMOTIONS[label] for label in top_labels[0].cpu().numpy()]
 
             cv2.rectangle(image, (x1, y1), (x2, y2), (0, 255, 0), 2)
-            cv2.putText(image, emotion, (10, 30), TEXT_COLOR, 0.9, (0, 255, 0), 2)
+            cv2.putText(image, ", ".join(emotions), (10, 30), TEXT_COLOR, 0.9, (0, 255, 0), 2)
         else: 
             emotion = "No face/emotion detected/determined"
             cv2.putText(image, emotion, (10, 30), TEXT_COLOR, 0.7, (0, 0, 255), 2)
