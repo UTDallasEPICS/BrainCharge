@@ -8,12 +8,13 @@ import torch
 from torch import device, cuda, Tensor, float32
 from torchvision.models import ResNet
 from torchvision.transforms import v2
-from cv_model import get_resnet
+from cv.cv_model import get_resnet
 
 DEVICE: device = "cuda" if cuda.is_available() else "cpu"
 FILEPATH = "./yolov8n-face-lindevs.pt"
 AVAILABLE_EMOTIONS = ["Angry", "Disgust", "Fear", "Happy", "Sad", "Surprise", "Neutral"]
 TEXT_COLOR = cv2.FONT_HERSHEY_SIMPLEX
+NUM_TOP_EMOTIONS = 3
 
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # 0=all, 1=INFO, 2=WARNING, 3=ERROR
@@ -111,7 +112,7 @@ def cv_pipeline(camera: cv2.VideoCapture, face_detector: YOLO, emotion_classifie
             # Feed to emotion classifier
             face_region = image[y1:y2, x1:x2]
             output = emotion_classifier(convert_to_tensor(face_region, DEVICE))
-            _, top_labels = torch.topk(output, 3)
+            _, top_labels = torch.topk(output, NUM_TOP_EMOTIONS)
             emotions = [AVAILABLE_EMOTIONS[label] for label in top_labels[0].cpu().numpy()]
 
             cv2.rectangle(image, (x1, y1), (x2, y2), (0, 255, 0), 2)

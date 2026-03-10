@@ -4,8 +4,8 @@ import torch.optim as optim
 from torch.optim import lr_scheduler
 from torch import nn
 
-from cv_model import get_resnet, turn_off_batchnorm
-from fer2013 import FER2013
+from cv.cv_model import get_resnet, turn_off_batchnorm
+from cv.fer2013 import FER2013
 
 @torch.no_grad()
 def get_acc(model, data_loader, arg_device) -> float:
@@ -89,17 +89,8 @@ def main():
 
     # Sample stuff
     resnet = get_resnet().to(device)
-    optimizer = optim.SGD(
-        resnet.parameters(), 
-        lr=1e-2, 
-        momentum=0.9, 
-        weight_decay=1e-4
-    )
-    scheduler = lr_scheduler.CosineAnnealingLR(
-        optimizer, 
-        T_max=60, 
-        eta_min=1e-5
-    )
+    optimizer = optim.SGD(resnet.parameters(), lr=1e-2, momentum=0.9, weight_decay=1e-4)
+    scheduler = lr_scheduler.CosineAnnealingLR(optimizer, T_max=60, eta_min=1e-5)
 
     # Data loader
     train_fer2013 = FER2013(set_type="train")
