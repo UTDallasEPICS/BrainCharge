@@ -21,18 +21,6 @@ void setup() {
 
 void loop() {
 
-  motorBR.run(BACKWARD);
-  delay(1000);
-
-  //stop
-  motorFL.run(RELEASE);
-  motorFR.run(RELEASE);
-  motorBL.run(RELEASE);
-  motorBR.run(RELEASE);
-  delay(1000);
-  
-
-  /*
   //forward
   motorFL.run(FORWARD);
   motorFR.run(FORWARD);
@@ -53,14 +41,72 @@ void loop() {
   motorFR.run(BACKWARD);
   motorBL.run(FORWARD);
   motorBR.run(BACKWARD);
-  delay(700);
+  delay(800);
+
+  //stop
+  motorFL.run(RELEASE);
+  motorFR.run(RELEASE);
+  motorBL.run(RELEASE);
+  motorBR.run(RELEASE);
+  delay(1000);
 
   //turn left
   motorFL.run(BACKWARD);
   motorFR.run(FORWARD);
   motorBL.run(BACKWARD);
   motorBR.run(FORWARD);
-  delay(700);
+  delay(800);
+
+  //stop
+  motorFL.run(RELEASE);
+  motorFR.run(RELEASE);
+  motorBL.run(RELEASE);
+  motorBR.run(RELEASE);
+  delay(1000);
+
+  //strafe left
+  motorFL.run(BACKWARD);
+  motorFR.run(FORWARD);
+  motorBL.run(FORWARD);
+  motorBR.run(BACKWARD);
+  delay(1000);
+
+  //stop
+  motorFL.run(RELEASE);
+  motorFR.run(RELEASE);
+  motorBL.run(RELEASE);
+  motorBR.run(RELEASE);
+  delay(1000);
+
+  //strafe right
+  motorFL.run(FORWARD);
+  motorFR.run(BACKWARD);
+  motorBL.run(BACKWARD);
+  motorBR.run(FORWARD);
+  delay(1000);
+
+  /*
+  //stop
+  motorFL.run(RELEASE);
+  motorFR.run(RELEASE);
+  motorBL.run(RELEASE);
+  motorBR.run(RELEASE);
+  delay(1000);
+
+
+  //turn right
+  motorFL.run(FORWARD);
+  motorFR.run(BACKWARD);
+  motorBL.run(FORWARD);
+  motorBR.run(BACKWARD);
+  delay(800);
+
+  //turn left
+  motorFL.run(BACKWARD);
+  motorFR.run(FORWARD);
+  motorBL.run(BACKWARD);
+  motorBR.run(FORWARD);
+  delay(800);
 
   //strafe left
   motorFL.run(BACKWARD);
@@ -75,6 +121,20 @@ void loop() {
   motorBL.run(BACKWARD);
   motorBR.run(FORWARD);
   delay(1000);
+
+  //forward
+  motorFL.run(FORWARD);
+  motorFR.run(FORWARD);
+  motorBL.run(FORWARD);
+  motorBR.run(FORWARD);
+  delay(2000);
+
+  //backward
+  motorFL.run(BACKWARD);
+  motorFR.run(BACKWARD);
+  motorBL.run(BACKWARD);
+  motorBR.run(BACKWARD);
+  delay(2000);
 
   */
 
