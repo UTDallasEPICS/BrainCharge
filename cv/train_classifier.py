@@ -30,14 +30,16 @@ def save_model(arg_model, optimizer, scheduler):
         "optimizer": optimizer.state_dict(),
         "scheduler": scheduler.state_dict()
     },
-    './params/emotion_model.pth')
+    './emotion_model.pth')
 
 
 def load_model(arg_model, optimizer, scheduler, device):
-    checkpoint = torch.load('/params/emotion_model_checkpoint.pth', map_location=device)
+    """Load the model from the parameters"""
+    checkpoint = torch.load('./emotion_model_checkpoint.pth', map_location=device)
     arg_model.load_state_dict(checkpoint["model"])
-    optimizer.load_state_dict(checkpoint["optimizer"])
-    scheduler.load_state_dict(checkpoint["scheduler"])
+    if optimizer or scheduler:
+        optimizer.load_state_dict(checkpoint["optimizer"])
+        scheduler.load_state_dict(checkpoint["scheduler"])
 
 
 def train(num_epochs, arg_model, train_dataloader, val_dataloader, loss_fn, optimizer, scheduler, device):
@@ -87,17 +89,24 @@ def main():
     torch.cuda.empty_cache()
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
-    # Sample stuff
     resnet = get_resnet().to(device)
-    optimizer = optim.SGD(resnet.parameters(), lr=1e-2, momentum=0.9, weight_decay=1e-4)
-    scheduler = lr_scheduler.CosineAnnealingLR(optimizer, T_max=60, eta_min=1e-5)
+    optimizer = optim.SGD(
+        resnet.parameters(), lr=1e-2, momentum=0.9, weight_decay=1e-4
+    )
+    scheduler = lr_scheduler.CosineAnnealingLR(
+        optimizer, T_max=60, eta_min=1e-5
+    )
 
     # Data loader
     train_fer2013 = FER2013(set_type="train")
     val_fer2013 = FER2013(set_type="val")
 
-    train_dataloader = DataLoader(train_fer2013, batch_size=128, shuffle=True)
-    val_dataloader = DataLoader(val_fer2013, batch_size=128, shuffle=False)
+    train_dataloader = DataLoader(
+        train_fer2013, batch_size=128, shuffle=True, num_workers=2
+    )
+    val_dataloader = DataLoader(
+        val_fer2013, batch_size=128, shuffle=False, num_workers=2
+    )
 
     NUM_EPOCHS = 60
 
@@ -112,3 +121,7 @@ def main():
         scheduler=scheduler
     )
     save_model(resnet, optimizer, scheduler)
+
+if __name__ == "__main__":
+    # Train or finetune the model
+    main()

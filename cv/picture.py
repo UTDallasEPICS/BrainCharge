@@ -35,18 +35,18 @@ def turn_on_camera() -> cv2.VideoCapture:
     """Attempts to turn on the camera"""
     print("Trying DirectShow backend...")
     camera_found = False
-    camera = cv2.VideoCapture(0, cv2.CAP_DSHOW)
+    new_camera = cv2.VideoCapture(0, cv2.CAP_DSHOW)
 
-    if camera.isOpened():
+    if new_camera.isOpened():
         camera_found = True
         print("Cam found with DirectShow.")
     else:
-        camera.release()
+        new_camera.release()
         print("Trying different backend with different camera indices")
         for i in range(3):
             print(f"Trying camera index [i]...")
-            camera = cv2.VideoCapture(i)
-            if camera.isOpened():
+            new_camera = cv2.VideoCapture(i)
+            if new_camera.isOpened():
                 camera_found = True
                 print(f"Camera found at index {i}")
                 break
@@ -59,7 +59,11 @@ def turn_on_camera() -> cv2.VideoCapture:
         print("3. No other application is using camera")
         exit()
 
-    return camera
+    for _ in range(7):
+        # Warm up the camera to prevent it from crashing when reopening
+        new_camera.read()
+
+    return new_camera
 
 
 def turn_off_camera(camera: cv2.VideoCapture) -> None:
