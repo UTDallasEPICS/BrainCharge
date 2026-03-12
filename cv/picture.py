@@ -154,12 +154,23 @@ class CVPipeline:
 
 
 def main():
-    # This is to test the workflow of the pipeline
+    # This is to test the workflow of the pipeline when integrated into workflow
     cv_pipeline = CVPipeline()
+    conversation_mode = False
 
-    cv_pipeline.turn_on_camera()
-    cv_pipeline.execute()
-    cv_pipeline.turn_off_camera()
+    while True:
+        prompt = input("Enter: ")
+        if "hello" in prompt.lower():
+            conversation_mode = True
+            cv_pipeline.turn_on_camera()
+
+        if conversation_mode:
+            detected_emotions = cv_pipeline.execute()
+            print(f"LLM will response based on these emotions: {", ".join(detected_emotions)}")
+
+        if "bye" in prompt.lower():
+            conversation_mode = False
+            cv_pipeline.turn_off_camera()
 
 if __name__ == "__main__": 
     main()
