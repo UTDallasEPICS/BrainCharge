@@ -30,12 +30,12 @@ def save_model(arg_model, optimizer, scheduler):
         "optimizer": optimizer.state_dict(),
         "scheduler": scheduler.state_dict()
     },
-    './emotion_model.pth')
+    './emotions_model.pth')
 
 
 def load_model(arg_model, optimizer, scheduler, device):
     """Load the model from the parameters"""
-    checkpoint = torch.load('./emotion_model_checkpoint.pth', map_location=device)
+    checkpoint = torch.load('./emotions_model.pth', map_location=device)
     arg_model.load_state_dict(checkpoint["model"])
     if optimizer or scheduler:
         optimizer.load_state_dict(checkpoint["optimizer"])
@@ -85,7 +85,7 @@ def train(num_epochs, arg_model, train_dataloader, val_dataloader, loss_fn, opti
         print(f"Train acc: {train_acc:.4f}, val acc: {val_acc:.4f}")
 
 def main():
-    # Comment this out if you want to empty the cache
+    # Comment this out if you don't want to empty the cache
     torch.cuda.empty_cache()
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 

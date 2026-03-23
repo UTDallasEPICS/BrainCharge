@@ -2,48 +2,50 @@ from typing import Optional
 from ultralytics import YOLO
 import cv2
 from cv2.typing import MatLike
-import os
-import warnings
 from pathlib import Path
 import torch
 from torch import device, cuda, Tensor, float32
-from torchvision.models import ResNet
 from torchvision.transforms import v2
+from torchvision.models import Resnet
 from cv.cv_model import get_resnet
+from cv.train_classifier import load_model
 
 DEVICE: device = "cuda" if cuda.is_available() else "cpu"
-FILEPATH = "./yolov8n-face-lindevs.pt"
+DETECTOR_FILEPATH = "./yolov8n-face-lindevs.pt"
+CLASSIFIER_FILEPATH = "./emotions_model.pt"
+
 AVAILABLE_EMOTIONS = ["Angry", "Disgust", "Fear", "Happy", "Sad", "Surprise", "Neutral"]
 TEXT_COLOR = cv2.FONT_HERSHEY_SIMPLEX
 NUM_TOP_EMOTIONS = 3
 
-
-#os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # 0=all, 1=INFO, 2=WARNING, 3=ERROR
-#os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'  # Disable oneDNN messages
-#warnings.filterwarnings('ignore')
-
-
+# Maybe a better way of handling these constants rather than CONSTANT
 PARENT_NAME = r"C:\Users\sahot\OneDrive\Desktop\textbooks+Slides\EPICS\spring26\code\BrainCharge_Update\BrainCharge"
 DIRECTORY_NAME = "picturefile"
 
-parent_path = Path(PARENT_NAME)
-child_path = parent_path / DIRECTORY_NAME
+PARENT_PATH = Path(PARENT_NAME)
+CHILD_PATH = PARENT_PATH / DIRECTORY_NAME
 
-child_path.mkdir(parents=True, exist_ok=True)
-print(f"Image folder ready at: {child_path}")
+CHILD_PATH.mkdir(parents=True, exist_ok=True)
+print(f"Image folder ready at: {CHILD_PATH}")
 
 class CVPipeline:
     def __init__(self):
         self.camera: Optional[cv2.VideoCapture] = None
-        self.face_detector = self._init_face_detector(FILEPATH, DEVICE)
-        self.emotion_classifier = get_resnet().to(DEVICE).eval()
-
+        self.face_detector = self._init_face_detector(DETECTOR_FILEPATH, DEVICE)
+        self.emotion_classifier = self._init_emotion_classifier(CLASSIFIER_FILEPATH, DEVICE)
 
     def _init_face_detector(self, filepath: str, device) -> YOLO:
         """Get the YOLO-based detection model"""
         detector = YOLO(filepath).to(device)
         return detector
     
+
+    def _init_emotion_classifier(self, filepath: str, device) -> Resnet:
+        """Get the Resnet-based emotion classifying model"""
+        classifier = get_resnet().to(device).eval()
+        classifier.load_state_dict(torch.load(filepath, map_location=device))
+        return classifier
+
 
     def _convert_to_tensor(image: MatLike, device: device) -> Tensor:
         """Convert the cv2 image to torch tensor"""
@@ -54,10 +56,8 @@ class CVPipeline:
             v2.Resize(224),
             v2.ToImage(),
             v2.ToDtype(float32, scale=True),
-            v2.Normalize(
-                mean=[0.485, 0.456, 0.406],
-                std=[0.229, 0.224, 0.225],
-            )
+            v2.Normalize(mean=[0.485, 0.456, 0.406],
+                        std=[0.229, 0.224, 0.225])
         ])
         return transform(grayscale).unsqueeze(0).to(device)
     
@@ -98,6 +98,7 @@ class CVPipeline:
         for _ in range(7):
             # Warm up the camera to prevent it from crashing when reopening
             self.camera.read()
+        print("Turn on the camera successfully!")
 
 
     def turn_off_camera(self) -> None:
@@ -139,14 +140,14 @@ class CVPipeline:
                 cv2.putText(image, emotions, (10, 30), TEXT_COLOR, 0.9, (0, 255, 0), 2)
 
             else: 
-                emotions = ["No face/emotion detected/determined"]
+                emotions = ["No emotion determined"]
                 cv2.putText(image, emotions, (10, 30), TEXT_COLOR, 0.7, (0, 0, 255), 2)
                 
         except Exception as e:
             emotions = [f"Error during emotional analysis {e}"]
             cv2.putText(image, emotions, (10, 30), TEXT_COLOR, 0.7, (0, 0, 255), 2)
 
-        image_path = child_path / "analyzed_image.jpg"
+        image_path = CHILD_PATH / "analyzed_image.jpg"
         cv2.imwrite(str(image_path), image)
 
         print(f"Final analyzed image saved to: {image_path}")

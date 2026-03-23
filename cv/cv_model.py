@@ -16,7 +16,7 @@ def get_resnet():
     )
 
     # Freeze every layer of the model except linear head and last convolutions
-    trainable_layers = ["fc", "layer4", "layer3.3"]
+    trainable_layers = ["fc", "layer4", "layer3.3", "layer3.2"]
     for name, param in modified_resnet.named_parameters():
         trainable = False
         for trainable_layer in trainable_layers:
