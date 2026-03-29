@@ -23,17 +23,20 @@ def led_controller():
             # Get user input
             val = input("Enter Command: ").strip().lower()
 
-            if val == '1':
-                ser.write(b"on\n")
-                print(">> Sent 'on' command")
-            elif val == '0':
-                ser.write(b"off\n")
-                print(">> Sent 'off' command")
-            elif val == 'q':
-                print("Closing connection...")
-                break
+            if val == 'forward':
+                ser.write(b"forward\n")
+            elif val == 'backward':
+                ser.write(b"backward\n")
+            elif val == 'right':
+                ser.write(b"right\n")
+            elif val == 'left':
+                ser.write(b"left\n")
+            elif val == 'strafe left':
+                ser.write(b"strafe left\n")
+            elif val == 'strafe right':
+                ser.write(b"strafe right\n")
             else:
-                print("Invalid input. Use 1, 0, or q.")
+                ser.write(b"stop\n")
 
             # Read back the Arduino's confirmation
             # We give it a tiny moment to process and reply
