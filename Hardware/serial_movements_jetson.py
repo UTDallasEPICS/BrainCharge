@@ -2,20 +2,14 @@ import serial
 import time
 import sys
 
-# --- CONFIGURATION ---
-# For Jetson/Linux: '/dev/ttyACM0' or '/dev/ttyUSB0'
-# For Windows: 'COM3', 'COM4', etc.      '/dev/ttyACM0' 
+# Change SERIAL_PORT to '/dev/ttyUSB0' or '/dev/ttyACM0' for Jetson
 SERIAL_PORT = 'COM3'
 BAUD_RATE = 115200
 
 def led_controller():
     try:
-        # Initialize Serial Connection
         ser = serial.Serial(SERIAL_PORT, BAUD_RATE, timeout=1)
         
-        # Arduinos often reset when the serial port opens. 
-        # We wait 2 seconds for the bootloader to finish.
-        print(f"Initializing connection on {SERIAL_PORT}...")
         time.sleep(2)
         print("Connected! Commands: '1' for ON, '0' for OFF, 'q' to QUIT")
 
@@ -38,12 +32,12 @@ def led_controller():
             else:
                 ser.write(b"stop\n")
 
-            # Read back the Arduino's confirmation
-            # We give it a tiny moment to process and reply
-            time.sleep(0.1)
-            if ser.in_waiting > 0:
-                response = ser.readline().decode('utf-8').strip()
-                print(f"Arduino says: {response}")
+            # Confirmation from the Arduino
+            
+            # time.sleep(0.1)
+            # if ser.in_waiting > 0:
+            #     response = ser.readline().decode('utf-8').strip()
+            #     print(f"Arduino says: {response}")
 
         ser.close()
 
