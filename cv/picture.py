@@ -9,9 +9,12 @@ from torch import device, cuda, Tensor, float32
 from torchvision.transforms import v2
 from torchvision.models import EfficientNet, efficientnet_b2
 from PIL import Image
+import time
+import serial # type: ignore
 
 DEVICE: device = "cuda" if cuda.is_available() else "cpu"
-DETECTOR_FILEPATH = "./yolov8n-face-lindevs.pt"
+PERSON_DETECTOR_FILEPATH = "yolov8n.pt"
+FACE_DETECTOR_FILEPATH = "./yolov8n-face-lindevs.pt"
 CLASSIFIER_FILEPATH = "./emotions_model.pth"
 
 AVAILABLE_EMOTIONS = ["Angry", "Disgust", "Fear", "Happy", "Sad", "Surprise", "Neutral"]
@@ -30,8 +33,12 @@ print(f"Image folder ready at: {CHILD_PATH}")
 class CVPipeline:
     def __init__(self):
         self.camera: Optional[cv2.VideoCapture] = None
-        self.face_detector = self._init_face_detector(DETECTOR_FILEPATH, DEVICE)
+        self.person_detector = self._init_detector(PERSON_DETECTOR_FILEPATH, device)
+        self.face_detector = self._init_face_detector(FACE_DETECTOR_FILEPATH, DEVICE)
         self.emotion_classifier = self._init_emotion_classifier(CLASSIFIER_FILEPATH, DEVICE)
+
+        self.arduino = serial.Serial('/dev/ttyACM0', 9600, timeout=2)
+        time.sleep(2)  # Wait for Arduino reset
 
     def _init_face_detector(self, filepath: str, device) -> YOLO:
         """Get the YOLO-based detection model"""
@@ -121,6 +128,122 @@ class CVPipeline:
             print("Turn off the camera successfully!")
 
 
+    # TODO: Find the better measurement than this
+    def _get_turn_signal(self, w, x1, x2) -> str:
+        """Determine if the robot turns left or right"""
+        center = (x1 + x2) / 2
+        threshold_left, threshold_right = w / 4, w * 3 / 4
+
+        if center > threshold_right:
+            return "L"
+        elif center < threshold_left:
+            return "R"
+        
+        return "S"
+    
+
+    def _get_move_signal(self, w, h, x1, x2, y1, y2) -> str:
+        """Determine if the robot moves forward or backward"""
+        region_area = (y2 - y1) * (x2 - x1)
+        camera_area = h * w
+
+        if region_area > camera_area / 2:
+            return "B"
+        elif region_area < camera_area / 4:
+            return "F"
+        
+        return "S"
+    
+
+    def _send_command(self, cmd):
+        """Send the command to the adruino"""
+        self.arduino.write((cmd + '\n').encode())
+        return self.arduino.readline().decode().strip()
+    
+
+    def realtime_movement_tracking(self) -> tuple[int]:
+        """
+        Person-tracking system for robot movement
+        """
+        curr_turn, curr_move = "", ""
+
+        if not self.camera: 
+            raise Exception("Unable to open the camera")
+
+        while True:
+            success, image = self.camera.read()
+            if not success:
+                raise ValueError("Failed to capture the image of the user")
+            
+            analysis = self.person_detector.track(image, persist=True, tracker="bytetrack.yaml")[0].boxes
+            if analysis.id is None:
+                # No persons or objects to track, send the empty image
+                cv2.imshow("Realtime Personal Tracking", image)
+                if cv2.waitKey(1) & 0xFF == ord('q'):
+                    break
+                continue
+
+            boxes = analysis.xyxy.cpu().numpy()
+            classes = analysis.cls.cpu().numpy()
+            track_ids = analysis.id.cpu().numpy()
+
+            if (
+                self.target is not None and 
+                self.target not in [int(id) for id in track_ids]
+            ):
+                # Clear the target if the target is out
+                self.target = None
+
+            for box, cls, track_id in zip(boxes, classes, track_ids):
+                if int(cls) == 0 and self.target is None:
+                    # Lock in the new target if there is no previous targets
+                    # or the previous target is out
+                    self.target = int(track_id)
+
+                if self.target == int(track_id):
+                    h, w, _ = image.shape
+                    x1, y1, x2, y2 = map(int, box)
+
+                    # Determine the signal
+                    new_turn = self._get_turn_signal(w, x1, x2)
+                    new_move = self._get_move_signal(w, h, x1, x2, y1, y2)
+
+                    if new_turn != curr_turn or new_move != curr_move:
+                        # If the instruction changes, send the new instruction to Arduino
+                        curr_turn = new_turn
+                        curr_move = new_move
+                        self._send_command(f"{curr_move}, {curr_turn}")
+
+                    cv2.rectangle(image, (x1, y1), (x2, y2), (255, 0, 0), 2)
+                    cv2.putText(
+                        image, 
+                        f"{curr_move}, {curr_turn}", 
+                        (x1, y1 - 10), 
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2
+                    )
+
+            cv2.imshow("Realtime Personal Tracking", image)
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
+
+
+    def _expand_face(self, w, h, x1, y1, x2, y2) -> tuple:
+        """Expand the box a little bit to match the training images"""
+        box_w = x2 - x1
+        box_h = y2 - y1
+        side = max(box_w, box_h)
+
+        cx = (x1 + x2) // 2
+        cy = (y1 + y2) // 2
+
+        _x1 = max(0, cx - side // 2)
+        _y1 = max(0, cy - side // 2)
+        _x2 = min(w, cx + side // 2)
+        _y2 = min(h, cy + side // 2)
+
+        return _x1, _y1, _x2, _y2
+
+
     def execute(self) -> list:
         emotions = []
 
@@ -140,33 +263,31 @@ class CVPipeline:
                 # The face the YOLO is most confident, which I think is often the closest face
                 h, w, _ = image.shape
                 x1, y1, x2, y2 = map(int, boxes[0])
-                box_w = x2 - x1
-                box_h = y2 - y1
-                side = max(box_w, box_h)
-
-                cx = (x1 + x2) // 2
-                cy = (y1 + y2) // 2
-
-                x1 = max(0, cx - side // 2)
-                y1 = max(0, cy - side // 2)
-                x2 = min(w, cx + side // 2)
-                y2 = min(h, cy + side // 2)
+                x1, y1, x2, y2 = self._expand_face(w, h, x1, y1, x2, y2)
                 face_region: MatLike = image[y1:y2, x1:x2]
 
                 # Feed to emotion classifier
                 face_region = image[y1:y2, x1:x2]
                 with torch.no_grad():
-                    output = self.emotion_classifier(self._convert_to_tensor(face_region, DEVICE))
+                    tensor = self._convert_to_tensor(face_region, DEVICE)
+                    output = self.emotion_classifier(tensor)
                     _, top_labels = torch.topk(output, NUM_TOP_EMOTIONS)
-
-                emotions = [AVAILABLE_EMOTIONS[l] for l in top_labels[0].cpu().numpy()]
+                    emotions = [AVAILABLE_EMOTIONS[l] for l in top_labels[0].cpu().numpy()]
+                    
                 cv2.rectangle(image, (x1, y1), (x2, y2), (0, 255, 0), 2)
                 cv2.putText(
-                    image, emotions, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
+                    image, 
+                    emotions, 
+                    (10, 30), 
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2
+                )
             else: 
                 emotions = ["No emotion determined"]
                 cv2.putText(
-                    image, emotions, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+                    image, emotions, (
+                    10, 30), 
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2
+                )
                 
         except Exception as e:
             emotions = [f"Error during emotional analysis {e}"]
