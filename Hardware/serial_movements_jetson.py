@@ -17,20 +17,20 @@ def led_controller():
             # Get user input
             val = input("Enter Command: ").strip().lower()
 
-            if val == 'forward':
-                ser.write(b"forward\n")
-            elif val == 'backward':
-                ser.write(b"backward\n")
-            elif val == 'right':
-                ser.write(b"right\n")
-            elif val == 'left':
-                ser.write(b"left\n")
-            elif val == 'strafe left':
-                ser.write(b"strafe left\n")
-            elif val == 'strafe right':
-                ser.write(b"strafe right\n")
+            if val == 'f':
+                ser.write(b'f')
+            elif val == 'b':
+                ser.write(b'b')
+            elif val == 'r':
+                ser.write(b'r')
+            elif val == 'l':
+                ser.write(b'l')
+            elif val == 'sl':
+                ser.write(b't')
+            elif val == 'sr':
+                ser.write(b'q')
             else:
-                ser.write(b"stop\n")
+                ser.write(b's')
 
             # Confirmation from the Arduino
             
