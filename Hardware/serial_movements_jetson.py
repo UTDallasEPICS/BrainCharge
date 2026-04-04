@@ -6,12 +6,14 @@ import sys
 SERIAL_PORT = 'COM3'
 BAUD_RATE = 115200
 
-def led_controller():
+def serialCom():
     try:
         ser = serial.Serial(SERIAL_PORT, BAUD_RATE, timeout=1)
         
         time.sleep(2)
-        print("Connected! Commands: '1' for ON, '0' for OFF, 'q' to QUIT")
+
+        print("The keyboard strokes go as follows:\n  F for forward\n  B for Backward\n  R for right\n"
+            "  L for left\n  SL for strafe left \n  SR for strafe right")
 
         while True:
             # Get user input
@@ -32,20 +34,11 @@ def led_controller():
             else:
                 ser.write(b's')
 
-            # Confirmation from the Arduino
-            
-            # time.sleep(0.1)
-            # if ser.in_waiting > 0:
-            #     response = ser.readline().decode('utf-8').strip()
-            #     print(f"Arduino says: {response}")
-
-        ser.close()
-
     except serial.SerialException as e:
         print(f"\n[ERROR] Could not connect to {SERIAL_PORT}.")
         print("Check if the Arduino is plugged in or if the Serial Monitor is still open.")
     except KeyboardInterrupt:
-        print("\nScript stopped by user.")
-
+        print("\nScript stopped by keyboard interrupt. Try again.")
+    
 if __name__ == "__main__":
-    led_controller()
+    serialCom()

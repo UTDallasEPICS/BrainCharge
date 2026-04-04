@@ -9,7 +9,7 @@ AF_DCMotor motorBR(4); // Back Right
 
 //line following sensor
 #define SENSOR_ADDR 0x48
-char cmd = 's';
+char cmd = 's'; //this is how we will control movement for now
 
 void move_forward() {
   motorFL.run(FORWARD);
@@ -65,27 +65,46 @@ void setup() {
   Wire.begin();
   Serial.begin(115200);
 
-  int startSpeed = 100;
+  int startSpeed = 200;
   motorFL.setSpeed(startSpeed);
   motorFR.setSpeed(startSpeed);
   motorBL.setSpeed(startSpeed);
   motorBR.setSpeed(startSpeed);
+
+  //brief pause
+  delay(1000);
+
+  //get rid of any weird initial readings
+  getLineStop();
 }
 
 void loop() {
   bool stopStatus = getLineStop();
 
-  if (stopStatus) {
+  if (stopStatus) { //if stop is triggered
+    stop_movement(); //stop immediately
+    delay(300);
+
+    //some logic to choose the best way to move
+    if (cmd == 'q') { 
+      strafe_left();
+    }  else if (cmd == 't') { 
+      strafe_right();
+    } else {
+      move_backward();
+    }
+
+    delay(750); //let leaving movement run this long
+
     stop_movement();
-    cmd = 's';
+    cmd = 's'; //set command to stop
   }
 
-  // serial communication
+  // if serial communication available
   if (Serial.available() > 0) {
-    cmd = Serial.read();
+    cmd = Serial.read(); //read it and execute
 
     if (cmd == 'f') {
-      //Serial.println("LED is ON");
       move_forward();
     } else if (cmd == 'b') {
       move_backward();
@@ -93,9 +112,9 @@ void loop() {
       turn_right();
     }  else if (cmd == 'l') {
       turn_left();
-    } else if (cmd == 'q') { //didn't know what char to pick
+    } else if (cmd == 'q') { 
       strafe_right();
-    }  else if (cmd == 't') { //didn't know what char to pick
+    }  else if (cmd == 't') { 
       strafe_left();
     } else {
       stop_movement();
@@ -104,7 +123,7 @@ void loop() {
 }
 
 bool getLineStop() {
-  //the transmission for wire
+  //protocol for telling wire we want a signal
   Wire.beginTransmission(SENSOR_ADDR);
   Wire.write(0x01); 
   Wire.endTransmission();
@@ -112,12 +131,13 @@ bool getLineStop() {
   //get back info from wire, just need the 1 byte
   Wire.requestFrom(SENSOR_ADDR, 1);
   
-  //logic
+  //if we got something
   if (Wire.available()) {
     byte raw = Wire.read();
     
-    //for the sensors, 1 means nothing triggered, zero means boundary triggered (senses something)
+    //for each sensor, 1 means nothing triggered, zero means boundary triggered (senses something)
     //so 0 means everything is triggered (0 0 0 0)
+    //each combination has its own binary number, and therefore its own normal number
     if (raw != 0) {
       return true;  //stop the robot if see any light
     }
