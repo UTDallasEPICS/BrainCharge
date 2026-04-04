@@ -54,7 +54,7 @@ class CVPipeline:
 
         if CONNECT_ARDUINO_FLAG:
             import serial # type: ignore
-            self.arduino = serial.Serial('/dev/ttyACM0', 9600, timeout=2)
+            self.arduino = serial.Serial('/dev/ttyACM0', 115200, timeout=2)
             time.sleep(2)  # Wait for Arduino reset
 
 
@@ -155,11 +155,11 @@ class CVPipeline:
         threshold = w / 5
 
         if center_dist > threshold:
-            return "L"
+            return "L" #left
         elif center_dist < -threshold:
-            return "R"
+            return "R" #right
         
-        return "S"
+        return "S" #stop
 
 
     def _get_move_signal(self, 
@@ -170,18 +170,30 @@ class CVPipeline:
         camera_area = h * w
 
         if region_area > camera_area / 3:
-            return "B"
+            return "B" #backward
         elif region_area < camera_area / 4:
-            return "F"
+            return "F" #forward
         
-        return "S"
+        return "S" #stop
 
 
-    def _send_command(self, cmd: str):
-        # ABBY HELP ME WITH THIS!!
+    def _send_command(self, move: str, turn: str):
         """Helper method: Send the new movement command to the adruino"""
-        self.arduino.write((cmd + '\n').encode())
-        return self.arduino.readline().decode().strip()
+        #It'll be a lot faster to just send a character instead of string
+        if move == "B":
+            cmd = 'b'  # Back up if too close
+        elif turn == "L":
+            cmd = 'l' #turn towards
+        elif turn == "R":
+            cmd = 'r' #turn towards
+        elif move == "F":
+            cmd = 'f' #go forwards
+        else:
+            cmd = 's'
+
+        self.arduino.write(cmd.encode())
+
+        #return self.arduino.readline().decode().strip() - as of now, I don't think we'll need
 
 
     def track_movement(self) -> tuple[int]:
@@ -249,7 +261,7 @@ class CVPipeline:
                         prev_turn = new_turn
                         prev_move = new_move
                         if CONNECT_ARDUINO_FLAG:
-                            self._send_command(f"{prev_move}, {prev_turn}")
+                            self._send_command(prev_move, prev_turn)
 
                     cv2.rectangle(image, (x1, y1), (x2, y2), (255, 0, 0), 2)
                     cv2.putText(
