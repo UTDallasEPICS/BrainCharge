@@ -1,1 +1,0 @@
-from picture import CVPipeline

@@ -17,8 +17,8 @@ CONNECT_ARDUINO_FLAG: bool = False
 # GLOBAL
 DEVICE: device = "cuda" if cuda.is_available() else "cpu"
 PERSON_DETECTOR_FILEPATH = "yolov8n.pt"
-FACE_DETECTOR_FILEPATH = "./yolov8n-face-lindevs.pt"
-EMOTION_CLASSIFIER_FILEPATH = "./emotions_model.pt"
+FACE_DETECTOR_FILEPATH = "./cv_pipeline/yolov8n-face-lindevs.pt"
+EMOTION_CLASSIFIER_FILEPATH = "./cv_pipeline/emotions_model.pt"
 AVAILABLE_EMOTIONS = ["Angry", "Fear", "Happy", "Neutral", "Sad"]
 NUM_TOP_EMOTIONS = 2
 
@@ -51,6 +51,8 @@ class CVPipeline:
 
         # For person tracking
         self.target: Optional[int] = None
+
+        # Sreeejaaaaaaa
         if CONNECT_ARDUINO_FLAG:
             import serial # type: ignore
             self.arduino = serial.Serial('/dev/ttyACM0', 115200, timeout=2)

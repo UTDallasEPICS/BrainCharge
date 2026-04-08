@@ -4,8 +4,8 @@ import torch.optim as optim
 from torch.optim import lr_scheduler
 from torch import nn
 
-from cv.cv_model import get_efficientnet, turn_off_batchnorm
-from cv.fer2013 import FER2013
+from cv_pipeline.cv_model import get_efficientnet, turn_off_batchnorm
+from cv_pipeline.fer2013 import FER2013
 from collections import Counter
 
 def get_class_weights():

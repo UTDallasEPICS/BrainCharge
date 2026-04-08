@@ -1,0 +1,1 @@
+from cv_pipeline.picture import CVPipeline

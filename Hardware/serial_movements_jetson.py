@@ -1,10 +1,11 @@
 import serial
 import time
-import sys
+from cv_pipeline import CVPipeline
 
 # Change SERIAL_PORT to '/dev/ttyUSB0' or '/dev/ttyACM0' for Jetson
 SERIAL_PORT = 'COM3'
 BAUD_RATE = 115200
+
 
 def serialCom():
     try:
@@ -39,6 +40,11 @@ def serialCom():
         print("Check if the Arduino is plugged in or if the Serial Monitor is still open.")
     except KeyboardInterrupt:
         print("\nScript stopped by keyboard interrupt. Try again.")
-    
+
 if __name__ == "__main__":
-    serialCom()
+    #serialCom()
+
+    pipeline = CVPipeline()
+    pipeline.turn_on_camera()
+    pipeline.track_movement()
+    pipeline.turn_off_camera()
