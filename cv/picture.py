@@ -20,7 +20,7 @@ PERSON_DETECTOR_FILEPATH = "yolov8n.pt"
 FACE_DETECTOR_FILEPATH = "./yolov8n-face-lindevs.pt"
 EMOTION_CLASSIFIER_FILEPATH = "./emotions_model.pt"
 AVAILABLE_EMOTIONS = ["Angry", "Fear", "Happy", "Neutral", "Sad"]
-NUM_TOP_EMOTIONS = 3
+NUM_TOP_EMOTIONS = 2
 
 # Check and create if needed the file needed for the file
 try:
@@ -51,7 +51,6 @@ class CVPipeline:
 
         # For person tracking
         self.target: Optional[int] = None
-
         if CONNECT_ARDUINO_FLAG:
             import serial # type: ignore
             self.arduino = serial.Serial('/dev/ttyACM0', 115200, timeout=2)
@@ -90,7 +89,7 @@ class CVPipeline:
             v2.ToImage(),
             v2.ToDtype(torch.float32, scale=True),
             v2.Normalize(mean=[0.485, 0.456, 0.406],
-                            std=[0.229, 0.224, 0.225])
+                        std=[0.229, 0.224, 0.225])
         ])
 
         return transform(modified).unsqueeze(0).to(device)
@@ -144,7 +143,7 @@ class CVPipeline:
         """Turn off the camera if there is an opened one"""
         if self.camera is not None:
             self.camera.release()
-            self.camera.destroyAllWindows() 
+            cv2.destroyAllWindows()
             self.camera = None
             print("Turn off the camera successfully!")
 
@@ -152,12 +151,12 @@ class CVPipeline:
     def _get_turn_signal(self, w: int, x1: int, x2: int) -> str:
         """Helper method: Determine if the robot turns left or right"""
         center_dist = (x1 + x2 - w) / 2
-        threshold = w / 5
+        threshold = w / 8
 
-        if center_dist > threshold:
-            return "L" #left
-        elif center_dist < -threshold:
-            return "R" #right
+        if center_dist >= threshold:
+            return "R"
+        elif center_dist <= -threshold:
+            return "L"
         
         return "S" #stop
 
@@ -169,10 +168,10 @@ class CVPipeline:
         region_area = (y2 - y1) * (x2 - x1)
         camera_area = h * w
 
-        if region_area > camera_area / 3:
-            return "B" #backward
-        elif region_area < camera_area / 4:
-            return "F" #forward
+        if region_area >= camera_area / 2:
+            return "B"
+        elif region_area <= camera_area / 4:
+            return "F"
         
         return "S" #stop
 
@@ -225,6 +224,7 @@ class CVPipeline:
                 # No persons or objects to track, send the empty image
                 cv2.imshow("Realtime Personal Tracking", image)
                 if cv2.waitKey(1) & 0xFF == ord('q'):
+                    # Hit q to stop the movement tracking (For DEMO)
                     break
                 continue
 
@@ -263,12 +263,12 @@ class CVPipeline:
                         if CONNECT_ARDUINO_FLAG:
                             self._send_command(prev_move, prev_turn)
 
-                    cv2.rectangle(image, (x1, y1), (x2, y2), (255, 0, 0), 2)
+                    cv2.rectangle(image, (x1, y1), (x2, y2), (255, 0, 0), 3)
                     cv2.putText(
                         image, 
                         f"Turn {prev_turn}, move {prev_move}", 
-                        (x1, y1 - 10), 
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2
+                        (10, 50), 
+                        cv2.FONT_HERSHEY_SIMPLEX, 1.5, (255, 0, 0), 5
                     )
 
             cv2.imshow("Realtime Personal Tracking", image)
@@ -324,44 +324,44 @@ class CVPipeline:
 
                 with torch.no_grad():
                     tensor = self._convert_to_tensor(face_region, DEVICE)
-                    logits = self.emotion_classifier(tensor)
-                    probs = torch.softmax(logits, dim=1)
-                    top_probs, top_labels = torch.topk(probs, NUM_TOP_EMOTIONS)
+                    output = torch.softmax(self.emotion_classifier(tensor), dim=1)
+                    probs, labels = torch.topk(output, NUM_TOP_EMOTIONS)
+                    # Get the top 3 emotions but if confidence in one of the top 2
+                    # is too low, then that emotion is dropped
                     emotions = [
                         {
                             "emotion": AVAILABLE_EMOTIONS[l],
-                            "confidence": round(top_probs[0][i].item(), 2)
+                            "confidence": round(probs[0][i].item(), 2)
                         } 
-                        for i, l in enumerate(top_labels[0].cpu().numpy())
+                        for i, l in enumerate(labels[0].cpu().numpy()) if probs[0][i].item() > 0.1
                     ]
                     
-                cv2.rectangle(image, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                cv2.rectangle(image, (x1, y1), (x2, y2), (0, 0, 255), 2)
                 cv2.putText(
                     image, 
                     ", ".join(e["emotion"] for e in emotions), 
-                    (10, 30), 
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2
+                    (10, 50), 
+                    cv2.FONT_HERSHEY_SIMPLEX, 1.5, (255, 0, 0), 5
                 )
                 image_path = DIRECTORY_PATH / "analyzed_image.jpg"
-                saved = cv2.imwrite(str(image_path), image)
-                if not saved:
+                image_saved = cv2.imwrite(str(image_path), image)
+                if not image_saved:
                     raise Exception("Error saving the image to the file")
 
                 print(f"Final analyzed image saved to: {image_path}")
-            else: 
+            else:
                 cv2.putText(
                     image, 
                     "No emotions determined", 
-                    (10, 30), 
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2
+                    (10, 50), 
+                    cv2.FONT_HERSHEY_SIMPLEX, 1.5, (255, 0, 0), 5
                 )
-                
         except Exception as e:
             cv2.putText(
                 image, 
                 f"Error during emotional analysis {e}", 
-                (10, 30),
-                cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2
+                (10, 50), 
+                cv2.FONT_HERSHEY_SIMPLEX, 1.5, (255, 0, 0), 5
             )
 
         return emotions
@@ -372,17 +372,6 @@ if __name__ == "__main__":
     cv_pipeline = CVPipeline()
     conversation_mode = False
 
-    while True:
-        prompt = input("Enter: ")
-        if "hello" in prompt.lower() and cv_pipeline.camera_off():
-            conversation_mode = True
-            cv_pipeline.turn_on_camera()
-
-        if conversation_mode:
-            emotions = cv_pipeline.execute()
-            print(f"Emotions: {", ".join([e["emotion"] for e in emotions])}")
-
-        if "bye" in prompt.lower() and cv_pipeline.camera_on():
-            conversation_mode = False
-            cv_pipeline.turn_off_camera()
-            break
+    cv_pipeline.turn_on_camera()
+    cv_pipeline.track_movement()
+    cv_pipeline.turn_off_camera()

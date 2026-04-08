@@ -1,29 +1,22 @@
 import torch.nn as nn
-from torchvision.models import resnet50, ResNet50_Weights
+from torchvision.models import efficientnet_b2, EfficientNet_B2_Weights
 
-def get_resnet():
+def get_efficientnet(pretrained: bool=False):
     """Initialize the model"""
-    modified_resnet = resnet50(weights=ResNet50_Weights.DEFAULT)
+    efficientnet = (
+        efficientnet_b2(weights=EfficientNet_B2_Weights.DEFAULT)
+        if pretrained else
+        efficientnet_b2()
+    )
     # Modify the linear head
-    modified_resnet.fc = nn.Sequential(
-        nn.Linear(modified_resnet.fc.in_features, 1024, bias=True),
+    efficientnet.classifier = nn.Sequential(
+        nn.Linear(1408, 512, bias=True),
         nn.ReLU(inplace=True),
         nn.Dropout(),
-        nn.Linear(1024, 7, bias=True)
+        nn.Linear(512, 5, bias=True)
     )
 
-    # Freeze every layer of the model except linear head and last convolutions
-    trainable_layers = ["fc", "layer4", "layer3.3"]
-    for name, param in modified_resnet.named_parameters():
-        trainable = False
-        for trainable_layer in trainable_layers:
-            if trainable_layer in name:
-                trainable = True
-                break
-
-        param.requires_grad = trainable
-
-    return modified_resnet
+    return efficientnet
 
 
 def turn_off_batchnorm(model):

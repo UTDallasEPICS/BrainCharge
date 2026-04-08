@@ -4,8 +4,29 @@ import torch.optim as optim
 from torch.optim import lr_scheduler
 from torch import nn
 
-from cv.cv_model import get_resnet, turn_off_batchnorm
+from cv.cv_model import get_efficientnet, turn_off_batchnorm
 from cv.fer2013 import FER2013
+from collections import Counter
+
+def get_class_weights():
+    """
+    Compute the weight of each class in the dataset, 
+    since dataset might be imbalanced.
+    """
+    train_labels = []
+    train_fer2013 = FER2013(set_type="train")
+    train_dataloader = DataLoader(train_fer2013, batch_size=128, shuffle=True, num_workers=4)
+
+    for _, labels in train_dataloader:
+        train_labels.extend(labels.tolist())
+
+    counts = Counter(train_labels)
+    total = sum(counts.values())
+
+    class_weights = torch.tensor([total / counts[i] for i in range(5)])
+    class_weights = torch.clamp(class_weights, max=4.0)
+
+    return class_weights
 
 @torch.no_grad()
 def get_acc(model, data_loader, arg_device) -> float:
@@ -78,50 +99,41 @@ def train(num_epochs, arg_model, train_dataloader, val_dataloader, loss_fn, opti
             val_acc = get_acc(arg_model, val_dataloader, device)
 
         # Scheduling the learning rate after one epoch of training
-        scheduler.step()
+        scheduler.step(avg_val_loss)
 
         print(f"Epoch {epoch + 1}/{num_epochs},")
         print(f"Train loss: {avg_train_loss:.4f}, val loss: {avg_val_loss:.4f}")
         print(f"Train acc: {train_acc:.4f}, val acc: {val_acc:.4f}")
 
-def main():
+if __name__ == "__main__":
     # Comment this out if you don't want to empty the cache
     torch.cuda.empty_cache()
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
-    resnet = get_resnet().to(device)
+    model = get_efficientnet().to(device)
+    loss_fn = nn.CrossEntropyLoss(weight=get_class_weights(), label_smoothing=0.1)
     optimizer = optim.SGD(
-        resnet.parameters(), lr=1e-2, momentum=0.9, weight_decay=1e-4
+        model.parameters(), lr=1e-3, momentum=0.9, weight_decay=1e-4
     )
-    scheduler = lr_scheduler.CosineAnnealingLR(
-        optimizer, T_max=60, eta_min=1e-5
-    )
+    scheduler = lr_scheduler.ReduceLROnPlateau(optimizer, factor=0.3, patience=3)
 
     # Data loader
     train_fer2013 = FER2013(set_type="train")
     val_fer2013 = FER2013(set_type="val")
 
-    train_dataloader = DataLoader(
-        train_fer2013, batch_size=128, shuffle=True, num_workers=2
-    )
-    val_dataloader = DataLoader(
-        val_fer2013, batch_size=128, shuffle=False, num_workers=2
-    )
+    train_dataloader = DataLoader(train_fer2013, batch_size=128, shuffle=True, num_workers=2)
+    val_dataloader = DataLoader(val_fer2013, batch_size=128, shuffle=False, num_workers=2)
 
     NUM_EPOCHS = 60
 
-    load_model(resnet, optimizer, scheduler)
+    load_model(model, optimizer, scheduler)
     train(
         num_epochs=NUM_EPOCHS,
-        arg_model=resnet,
+        arg_model=model,
         train_dataloader=train_dataloader,
         val_dataloader=val_dataloader,
-        loss_fn=nn.CrossEntropyLoss(label_smoothing=0.1),
+        loss_fn=loss_fn,
         optimizer=optimizer,
         scheduler=scheduler
     )
-    save_model(resnet, optimizer, scheduler)
-
-if __name__ == "__main__":
-    # Train or finetune the model
-    main()
+    save_model(model, optimizer, scheduler)

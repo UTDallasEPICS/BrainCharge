@@ -5,11 +5,10 @@ from pathlib import Path
 import random
 from PIL import Image
 
-TRAIN_VAL_SPLIT_RATE = 0.90
-SEED_NUMBER = 42
+TRAIN_VAL_SPLIT_RATE = 0.85 # 85, 15 train val split
 
 class FER2013(Dataset):
-    def __init__(self, data_dir: str, set_type: str="train"):
+    def __init__(self, set_type: str="train"):
         if set_type not in ["train", "val", "test"]:
             raise ValueError("Invalid dataset type.")
 
@@ -19,9 +18,11 @@ class FER2013(Dataset):
         if set_type == "train":
             # For train set, the data will be augmented to endhance quality of model
             self.transform = v2.Compose([
+                v2.Lambda(lambda x: x.convert("L").convert("RGB")),
+                v2.Resize([288, 288]),
                 v2.RandomHorizontalFlip(),
-                v2.RandomAffine(20, [0.1, 0.1], fill=128),
-                v2.RandomResizedCrop(size=224, scale=(0.8, 1), ratio=(1.0, 1.0)),
+                v2.RandomRotation(20),
+                v2.ColorJitter(brightness=0.2, contrast=0.2),
                 v2.ToImage(),
                 v2.ToDtype(torch.float32, scale=True),
                 v2.Normalize(mean=[0.485, 0.456, 0.406],
@@ -29,7 +30,8 @@ class FER2013(Dataset):
             ])
         else:
             self.transform = v2.Compose([
-                v2.Resize(224),
+                v2.Lambda(lambda x: x.convert("L").convert("RGB")),
+                v2.Resize([288, 288]),
                 v2.ToImage(),
                 v2.ToDtype(torch.float32, scale=True),
                 v2.Normalize(mean=[0.485, 0.456, 0.406],
@@ -37,22 +39,26 @@ class FER2013(Dataset):
             ])
 
         if set_type != "test":
-            root = Path(f"{data_dir}/train")
+            root = Path("/content/emotions/train")
         else:
-            root = Path(f"{data_dir}/test")
+            root = Path("/content/emotions/test")
 
-        for idx, class_dir in enumerate(root.glob("*")):
-            # Last element of the filepath
-            label = class_dir.name
+        classes = sorted([
+            d.name for d in root.glob("*")
+            if d.name not in ["disgust", "surprise"]
+        ])
+
+        self.emotion_to_idx = {cls: i for i, cls in enumerate(classes)}
+
+        for cls in classes:
+            class_dir = root / cls
             for filename in class_dir.glob("*"):
-                self.data.append([str(filename), label])
-            self.emotion_to_idx[label] = idx
+                self.data.append([str(filename), cls])
 
         if set_type != "test":
-            # To make training re-producible, feel free to adjust as requested
-            random.seed(SEED_NUMBER)
             random.shuffle(self.data)
             split = int(len(self.data) * TRAIN_VAL_SPLIT_RATE)
+
             if set_type == "train":
                 self.data = self.data[:split]
             else:
@@ -64,7 +70,6 @@ class FER2013(Dataset):
 
 
     def __getitem__(self, index):
-        """Load the image from the fileimage"""
         filename, label = self.data[index]
         img = Image.open(filename).convert("RGB")
         processed_img = self.transform(img)
