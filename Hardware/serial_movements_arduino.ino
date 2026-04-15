@@ -12,6 +12,12 @@ AF_DCMotor motorBR(4); // Back Right
 char cmd = 's'; //this is how we will control movement for now
 
 void move_forward() {
+
+  motorFL.setSpeed(200);
+  motorFR.setSpeed(200);
+  motorBL.setSpeed(200);
+  motorBR.setSpeed(200);
+
   motorFL.run(FORWARD);
   motorFR.run(FORWARD);
   motorBL.run(FORWARD);
@@ -19,6 +25,12 @@ void move_forward() {
 }
 
 void move_backward() {
+  
+  motorFL.setSpeed(200);
+  motorFR.setSpeed(200);
+  motorBL.setSpeed(200);
+  motorBR.setSpeed(200);
+
   motorFL.run(BACKWARD);
   motorFR.run(BACKWARD);
   motorBL.run(BACKWARD);
@@ -34,20 +46,65 @@ void stop_movement() {
 
 
 void turn_right() {
+
+  int speed = 170;
+
+  motorFL.setSpeed(speed);
+  motorFR.setSpeed(speed);
+  motorBL.setSpeed(speed);
+  motorBR.setSpeed(speed);
+  
   motorFL.run(FORWARD);
   motorFR.run(BACKWARD);
   motorBL.run(FORWARD);
   motorBR.run(BACKWARD);
+
+  for (int i = 0; i < 50; i++) {
+    speed -= 5; // Decrease speed slightly each iteration
+    if (speed < 75) speed = 75; // Don't let it stall
+    
+    motorFL.setSpeed(speed);
+    motorFR.setSpeed(speed + 10);
+    motorBL.setSpeed(speed);
+    motorBR.setSpeed(speed + 10);
+    delay(10); // The "timing" of the slowdown
+  }
+
 }
 
 void turn_left() {
+  int speed = 170;
+
+  motorFL.setSpeed(speed);
+  motorFR.setSpeed(speed);
+  motorBL.setSpeed(speed);
+  motorBR.setSpeed(speed);
+
   motorFL.run(BACKWARD);
   motorFR.run(FORWARD);
   motorBL.run(BACKWARD);
   motorBR.run(FORWARD);
+
+  for (int i = 0; i < 50; i++) {
+    speed -= 5; // Decrease speed slightly each iteration
+    if (speed < 75) speed = 75; // Don't let it stall
+    
+    motorFL.setSpeed(speed);
+    motorFR.setSpeed(speed + 10);
+    motorBL.setSpeed(speed);
+    motorBR.setSpeed(speed + 10);
+
+    delay(10); // The "timing" of the slowdown
+  }
 }
 
 void strafe_left() {
+
+  motorFL.setSpeed(200);
+  motorFR.setSpeed(200);
+  motorBL.setSpeed(200);
+  motorBR.setSpeed(200);
+
   motorFL.run(BACKWARD);
   motorFR.run(FORWARD);
   motorBL.run(FORWARD);
@@ -55,6 +112,12 @@ void strafe_left() {
 }
 
 void strafe_right() {
+
+  motorFL.setSpeed(200);
+  motorFR.setSpeed(200);
+  motorBL.setSpeed(200);
+  motorBR.setSpeed(200);
+
   motorFL.run(FORWARD);
   motorFR.run(BACKWARD);
   motorBL.run(BACKWARD);

@@ -12,7 +12,7 @@ from PIL import Image
 import time
 
 # FEATURE FLAG (Sort of)
-CONNECT_ARDUINO_FLAG: bool = False
+CONNECT_ARDUINO_FLAG: bool = True
 
 
 # Change SERIAL_PORT to '/dev/ttyUSB0' or '/dev/ttyACM0' for Jetson
