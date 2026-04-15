@@ -14,6 +14,11 @@ import time
 # FEATURE FLAG (Sort of)
 CONNECT_ARDUINO_FLAG: bool = False
 
+
+# Change SERIAL_PORT to '/dev/ttyUSB0' or '/dev/ttyACM0' for Jetson
+SERIAL_PORT = 'COM3'
+BAUD_RATE = 115200
+
 # GLOBAL
 DEVICE: device = "cuda" if cuda.is_available() else "cpu"
 PERSON_DETECTOR_FILEPATH = "yolov8n.pt"
@@ -52,10 +57,9 @@ class CVPipeline:
         # For person tracking
         self.target: Optional[int] = None
 
-        # Sreeejaaaaaaa
         if CONNECT_ARDUINO_FLAG:
             import serial # type: ignore
-            self.arduino = serial.Serial('/dev/ttyACM0', 115200, timeout=2)
+            self.arduino = serial.Serial(SERIAL_PORT, BAUD_RATE, timeout=2)
             time.sleep(2)  # Wait for Arduino reset
 
 
@@ -106,7 +110,7 @@ class CVPipeline:
         """Attempts to turn on the camera"""
         print("Trying DirectShow backend...")
         camera_found = False
-        self.camera = cv2.VideoCapture(0, cv2.CAP_DSHOW)
+        self.camera = cv2.VideoCapture(1, cv2.CAP_DSHOW)
 
         if self.camera.isOpened():
             camera_found = True
@@ -181,18 +185,17 @@ class CVPipeline:
     def _send_command(self, move: str, turn: str):
         """Helper method: Send the new movement command to the adruino"""
         #It'll be a lot faster to just send a character instead of string
-        if move == "B":
-            cmd = 'b'  # Back up if too close
-        elif turn == "L":
-            cmd = 'l' #turn towards
-        elif turn == "R":
-            cmd = 'r' #turn towards
-        elif move == "F":
-            cmd = 'f' #go forwards
-        else:
-            cmd = 's'
-
-        self.arduino.write(cmd.encode())
+        if CONNECT_ARDUINO_FLAG:
+            if move == "B":
+                self.arduino.write(b'b')  # Back up if too close
+            elif turn == "L":
+                self.arduino.write(b'l') #turn towards
+            elif turn == "R":
+                self.arduino.write(b'r') #turn towards
+            elif move == "F":
+                self.arduino.write(b'f') #go forwards
+            else:
+                self.arduino.write(b's')
 
         #return self.arduino.readline().decode().strip() - as of now, I don't think we'll need
 
