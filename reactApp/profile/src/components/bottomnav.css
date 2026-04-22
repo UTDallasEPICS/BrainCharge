@@ -1,0 +1,35 @@
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 375px;
+  background: var(--white);
+  border-top: 0.5px solid var(--border);
+  padding: 10px 0 24px;
+  display: flex;
+  justify-content: space-around;
+  z-index: 100;
+}
+
+.nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 4px 16px;
+  border-radius: 8px;
+  transition: background 0.1s;
+}
+
+.nav-item span {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.nav-item.active span {
+  color: var(--teal);
+}

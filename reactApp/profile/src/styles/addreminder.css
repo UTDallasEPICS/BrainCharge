@@ -1,0 +1,66 @@
+.add-rem-screen {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  overflow-y: auto;
+  padding-bottom: 40px;
+}
+.arh { padding: 52px 20px 16px; }
+.back-btn {
+  width: 36px; height: 36px;
+  background: none; border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 12px; border-radius: 50%; padding: 0;
+  transition: background 0.15s;
+}
+.back-btn:hover { background: var(--bg); }
+.arh h1 { font-size: 26px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.3px; }
+.arh p { font-size: 14px; color: var(--text-muted); margin-top: 4px; }
+.ar-body { padding: 8px 20px 20px; }
+.form-group { margin-bottom: 18px; }
+.form-label { display: block; font-size: 13px; font-weight: 500; color: var(--text-primary); margin-bottom: 7px; }
+.form-input {
+  width: 100%; padding: 13px 14px;
+  border: 1px solid var(--border); border-radius: 12px;
+  font-size: 15px; color: var(--text-primary);
+  background: #fff; outline: none; font-family: inherit;
+  transition: border-color 0.15s;
+}
+.form-input:focus { border-color: var(--teal); }
+.form-input::placeholder { color: #b0ccd8; }
+.freq-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+.freq-chip {
+  padding: 8px 14px; border-radius: 20px;
+  border: 1px solid var(--border); background: #fff;
+  font-size: 13px; color: var(--text-primary);
+  cursor: pointer; font-family: inherit; transition: all 0.15s;
+}
+.freq-chip.sel { background: var(--teal); color: #fff; border-color: var(--teal); }
+.toggle-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 0; border-top: 0.5px solid var(--border);
+}
+.toggle-label { font-size: 15px; font-weight: 500; color: var(--text-primary); }
+.toggle-switch {
+  width: 52px; height: 30px; border-radius: 15px;
+  border: none; cursor: pointer; position: relative; padding: 0;
+  transition: background 0.2s;
+}
+.toggle-switch.on { background: var(--teal); }
+.toggle-switch.off { background: #b0ccd8; }
+.toggle-thumb {
+  display: block; width: 24px; height: 24px;
+  background: #fff; border-radius: 50%;
+  position: absolute; top: 3px; transition: left 0.2s;
+}
+.toggle-switch.on .toggle-thumb { left: 25px; }
+.toggle-switch.off .toggle-thumb { left: 3px; }
+.submit-btn {
+  width: 100%; margin-top: 24px; padding: 16px;
+  background: var(--teal); color: #fff;
+  border: none; border-radius: 14px;
+  font-size: 16px; font-weight: 500; cursor: pointer;
+  transition: background 0.15s;
+}
+.submit-btn:hover { background: var(--teal-dark); }
