@@ -202,7 +202,7 @@ bool getDistanceStop() {
   // Calculate and return average
   int distance = runningSum / numSamples;
   
-  if (distance <= 100){
+  if (distance <= 225){
     return true;
   } else {
     return false;

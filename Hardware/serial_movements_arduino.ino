@@ -9,7 +9,17 @@ AF_DCMotor motorBR(4); // Back Right
 
 //line following sensor
 #define SENSOR_ADDR 0x48
+//distance sensor
+#define ULTRASOUND_ADDR 0x77 
+
 char cmd = 's'; //this is how we will control movement for now
+
+//moving average variables
+const int numSamples = 10;      // Number of readings to average
+int samples[numSamples];        // Array to store readings
+int sampleIdx = 0;              // Current position in array
+long runningSum = 0;            // Running total for speed
+
 
 void move_forward() {
   motorFL.run(FORWARD);
@@ -76,12 +86,22 @@ void setup() {
 
   //get rid of any weird initial readings
   getLineStop();
+
+  // Take 10 quick readings so the dist average doesn't start at zero
+  int initialDistance = readDistance();
+  for (int i = 0; i < numSamples; i++) {
+    samples[i] = initialDistance;
+  }
+  runningSum = (long)initialDistance * numSamples;
 }
 
 void loop() {
   bool stopStatus = getLineStop();
 
-  if (stopStatus) { //if stop is triggered
+  //ultrasonic sensor work
+  bool stopDistanceStatus = getDistanceStop();
+
+  if (stopLineStatus || ) { //if stop is triggered
     stop_movement(); //stop immediately
     delay(300);
 
@@ -98,6 +118,12 @@ void loop() {
 
     stop_movement();
     cmd = 's'; //set command to stop
+
+    int freshDistance = readDistance(); 
+    for (int i = 0; i < numSamples; i++) {
+      samples[i] = freshDistance; // Fill the whole array with the new distance
+    }
+    runningSum = (long)freshDistance * numSamples; // Reset the sum accordingly
   }
 
   // if serial communication available
@@ -144,4 +170,43 @@ bool getLineStop() {
   }
   return false; 
 
+}
+
+int readDistance() {
+  Wire.beginTransmission(ULTRASOUND_ADDR);
+  Wire.write(0x00); 
+  Wire.endTransmission();
+
+  delay(20); //short delay 
+
+  //get back info from wire, just need the 1 byte
+  Wire.requestFrom(ULTRASOUND_ADDR, 2);
+
+  uint8_t low = Wire.read(); //low integer
+  uint8_t high = Wire.read(); //high integer
+
+  return (high << 8) | low;
+
+}
+
+bool getDistanceStop() {
+  // Subtract the oldest reading from the sum
+  runningSum -= samples[sampleIdx];
+  
+  // Get a new reading and add that to the sum
+  samples[sampleIdx] = readDistance();
+  runningSum += samples[sampleIdx];
+  
+  // Move to the next index 
+  //(wrap around using modulo, so we always put the right number using modulo)
+  sampleIdx = (sampleIdx + 1) % numSamples;
+
+  // Calculate and return average
+  int distance = runningSum / numSamples;
+  
+  if (distance <= 225){
+    return true;
+  } else {
+    return false;
+  }
 }
