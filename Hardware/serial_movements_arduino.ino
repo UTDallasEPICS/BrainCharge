@@ -75,6 +75,8 @@ void setup() {
   Wire.begin();
   Serial.begin(115200);
 
+  delay(2000); //give everything time to setup
+
   int startSpeed = 200;
   motorFL.setSpeed(startSpeed);
   motorFR.setSpeed(startSpeed);
@@ -96,14 +98,12 @@ void setup() {
 }
 
 void loop() {
-  bool stopStatus = getLineStop();
-
-  //ultrasonic sensor work
+  bool stopLineStatus = getLineStop();
   bool stopDistanceStatus = getDistanceStop();
 
-  if (stopLineStatus || ) { //if stop is triggered
+  if (stopLineStatus || stopDistanceStatus) { //if stop is triggered
     stop_movement(); //stop immediately
-    delay(300);
+    delay(300); //wait a moment
 
     //some logic to choose the best way to move
     if (cmd == 'q') { 
@@ -116,14 +116,19 @@ void loop() {
 
     delay(750); //let leaving movement run this long
 
-    stop_movement();
-    cmd = 's'; //set command to stop
+    stop_movement(); //stop movement again 
 
+    cmd = 's'; //set command to stop
+  
+  if (stopDistanceStatus) {
+    //if it was the distance triggered, reset the distance measurements
     int freshDistance = readDistance(); 
     for (int i = 0; i < numSamples; i++) {
       samples[i] = freshDistance; // Fill the whole array with the new distance
     }
     runningSum = (long)freshDistance * numSamples; // Reset the sum accordingly
+  }
+
   }
 
   // if serial communication available
@@ -194,7 +199,14 @@ bool getDistanceStop() {
   runningSum -= samples[sampleIdx];
   
   // Get a new reading and add that to the sum
-  samples[sampleIdx] = readDistance();
+  //-1 will be treated as a very large number, because it happens when nothing is being bounced back
+  int tempDistance = readDistance();
+  if (tempDistance <= 0) {
+    tempDistance = 1000; //set to safe distance, so doesnt trigger
+  }
+  Serial.println(tempDistance);
+
+  samples[sampleIdx] = tempDistance;
   runningSum += samples[sampleIdx];
   
   // Move to the next index 
