@@ -228,6 +228,8 @@ bool getLineStop() {
   //if we got something
   if (Wire.available()) {
     byte raw = Wire.read();
+
+    //Serial.print("Line: "); Serial.println(raw);
     
     //for each sensor, 1 means nothing triggered, zero means boundary triggered (senses something)
     //so 0 means everything is triggered (0 0 0 0)
@@ -253,23 +255,24 @@ int readDistance() {
   uint8_t low = Wire.read(); //low integer
   uint8_t high = Wire.read(); //high integer
 
-  return (high << 8) | low;
+  // Get a new reading and add that to the sum
+  //-1 will be treated as a very large number, because it happens when nothing is being bounced back
+  int tempDistance = (high << 8) | low;
+  if (tempDistance <= 0) {
+    tempDistance = 1000; //set to safe distance, so doesnt trigger
+  }
+
+  //Serial.print("Dist: "); Serial.println(tempDistance);
+
+  return tempDistance;
 
 }
 
 bool getDistanceStop() {
   // Subtract the oldest reading from the sum
   runningSum -= samples[sampleIdx];
-  
-  // Get a new reading and add that to the sum
-  //-1 will be treated as a very large number, because it happens when nothing is being bounced back
-  int tempDistance = readDistance();
-  if (tempDistance <= 0) {
-    tempDistance = 1000; //set to safe distance, so doesnt trigger
-  }
-  Serial.println(tempDistance);
 
-  samples[sampleIdx] = tempDistance;
+  samples[sampleIdx] = readDistance();
   runningSum += samples[sampleIdx];
   
   // Move to the next index 

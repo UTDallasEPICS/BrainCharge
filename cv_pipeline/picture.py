@@ -110,10 +110,11 @@ class CVPipeline:
         """Attempts to turn on the camera"""
         print("Trying DirectShow backend...")
         camera_found = False
-        self.camera = cv2.VideoCapture(1, cv2.CAP_DSHOW)
+        self.camera = cv2.VideoCapture(0, cv2.CAP_DSHOW)
 
         if self.camera.isOpened():
             camera_found = True
+            self.camera.set(cv2.CAP_PROP_BUFFERSIZE, 1)
             print("Cam found with DirectShow!")
         else:
             self.camera.release()
