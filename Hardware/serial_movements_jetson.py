@@ -43,8 +43,13 @@ def serialCom():
 
 if __name__ == "__main__":
     #serialCom()
-
-    pipeline = CVPipeline()
-    pipeline.turn_on_camera()
-    pipeline.track_movement()
-    pipeline.turn_off_camera()
+    wakeWord = ""
+    while wakeWord != "companion":
+        wakeWord = input("Enter Command: ").strip().lower()
+        if wakeWord == "companion":
+            pipeline = CVPipeline()
+            pipeline.turn_on_camera()
+            pipeline.track_movement()
+            pipeline.turn_off_camera()
+        
+        
