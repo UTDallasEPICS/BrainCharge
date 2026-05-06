@@ -158,7 +158,7 @@ class CVPipeline:
     def _get_turn_signal(self, w: int, x1: int, x2: int) -> str:
         """Helper method: Determine if the robot turns left or right"""
         center_dist = (x1 + x2 - w) / 2
-        threshold = w / 8
+        threshold = w / 4
 
         if center_dist >= threshold:
             return "R"
@@ -177,7 +177,7 @@ class CVPipeline:
 
         if region_area >= camera_area / 2:
             return "B"
-        elif region_area <= camera_area / 4:
+        elif region_area <= (camera_area / 4) and region_area >= (camera_area / 10):
             return "F"
         
         return "S" #stop
