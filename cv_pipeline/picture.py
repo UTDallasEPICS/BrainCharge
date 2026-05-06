@@ -155,15 +155,19 @@ class CVPipeline:
             print("Turn off the camera successfully!")
 
 
-    def _get_turn_signal(self, w: int, x1: int, x2: int) -> str:
+    def _get_turn_signal(self, w: int, h: int, x1: int, x2: int, y1: int, y2: int) -> str:
         """Helper method: Determine if the robot turns left or right"""
         center_dist = (x1 + x2 - w) / 2
         threshold = w / 4
 
-        if center_dist >= threshold:
-            return "R"
-        elif center_dist <= -threshold:
-            return "L"
+        region_area = (y2 - y1) * (x2 - x1)
+        camera_area = h * w
+
+        if not (region_area >= camera_area / 2 or (region_area <= (camera_area / 4) and region_area >= (camera_area / 10))):
+            if center_dist >= threshold:
+                return "R"
+            elif center_dist <= -threshold:
+                return "L"
         
         return "S" #stop
 
@@ -259,7 +263,7 @@ class CVPipeline:
                     x1, y1, x2, y2 = map(int, box)
 
                     # Determine the signal
-                    new_turn = self._get_turn_signal(w, x1, x2)
+                    new_turn = self._get_turn_signal(w, h, x1, x2, y1, y2)
                     new_move = self._get_move_signal(w, h, x1, x2, y1, y2)
 
                     if new_turn != prev_turn or new_move != prev_move:
