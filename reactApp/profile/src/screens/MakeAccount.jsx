@@ -25,8 +25,8 @@ export default function MakeAccount({ navigate }) {
     if (!form.lastName.trim())            e.lastName  = "Required.";
     if (form.username.trim().length < 3)  e.username  = "Min. 3 characters.";
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = "Enter a valid email.";
-    if (!form.dob)                         e.dob      = "Required.";
-    if (form.password.length < 8)          e.password = "Min. 8 characters.";
+    if (!form.dob)                        e.dob       = "Required.";
+    if (form.password.length < 8)         e.password  = "Min. 8 characters.";
     return e;
   };
 
@@ -36,7 +36,7 @@ export default function MakeAccount({ navigate }) {
     if (Object.keys(errs).length > 0) { setErrors(errs); return; }
     setLoading(true);
     try {
-      await new Promise((res) => setTimeout(res, 800)); // replace with real API call
+      await new Promise((res) => setTimeout(res, 800));
       navigate("home");
     } catch {
       setErrors({ general: "Something went wrong. Please try again." });
@@ -47,22 +47,21 @@ export default function MakeAccount({ navigate }) {
 
   return (
     <div className="make-account">
-      <h1>Create Account</h1>
-  <p className="subtitle">Enter information for your account</p>
 
-      {/* Avatar */}
-      <div className="avatar-wrap">
-        <div className="avatar-circle">
-          <PersonIcon />
-        </div>
-        <span className="avatar-label">Change Photo</span>
-      </div>
+      {/* ── Back arrow ── */}
+      <button className="back-arrow" onClick={() => navigate("splash")} aria-label="Go back">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="15 18 9 12 15 6" />
+        </svg>
+      </button>
+
+      <h1>Create Account</h1>
+      <p className="subtitle">Enter information for your account</p>
 
       {errors.general && <p className="error-banner">{errors.general}</p>}
 
       <form onSubmit={handleSubmit} noValidate>
 
-        {/* First + Last name side by side */}
         <div className="row-2">
           <div className="form-group">
             <label htmlFor="firstName">First Name</label>

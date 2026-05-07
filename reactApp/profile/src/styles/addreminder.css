@@ -64,3 +64,53 @@
   transition: background 0.15s;
 }
 .submit-btn:hover { background: var(--teal-dark); }
+
+/* addreminder.css additions */
+
+.day-picker-bar {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 10px;
+  border-radius: 12px;
+}
+
+.day-chip {
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: transparent;
+  color: darkgray;
+  font-size: 0.8rem;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.day-chip.active {
+  background: var(--teal, #1d9e75);
+  border-color: var(--teal, #1d9e75);
+  color: white;
+  box-shadow: 0 0 10px rgba(29, 158, 117, 0.3);
+}
+
+.clock-input {
+  appearance: none;
+  background: #f4f7f8;
+  color: #1a2a32;
+  font-size: 1.2rem;
+  font-weight: bold;
+  text-align: center;
+  padding: 12px;
+}
+
+/* Ensure the clock picker icon is visible on mobile */
+.clock-input::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  filter: invert(10%); /* Makes the icon match the text color */
+}

@@ -26,6 +26,19 @@ const navItems = [
     ),
   },
   {
+    id: "connect",
+    label: "Connect",
+    icon: (active) => (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+        stroke={active ? "#2596BE" : "#7a9aaa"} strokeWidth="1.8">
+        <path d="M17 1l4 4-4 4"/>
+        <path d="M3 11v-1a4 4 0 014-4h14"/>
+        <path d="M7 23l-4-4 4-4"/>
+        <path d="M21 13a4 4 0 01-4 4H3"/>
+      </svg>
+    ),
+  },
+  {
     id: "reminders",
     label: "Reminders",
     icon: (active) => (
@@ -37,8 +50,8 @@ const navItems = [
     ),
   },
   {
-    id: "documents",
-    label: "Documents",
+    id: "settings",
+    label: "Settings",
     icon: (active) => (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
         stroke={active ? "#2596BE" : "#7a9aaa"} strokeWidth="1.8">

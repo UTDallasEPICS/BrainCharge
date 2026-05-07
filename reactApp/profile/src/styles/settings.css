@@ -1,0 +1,366 @@
+/* settings.css — matches home.css teal theme */
+
+.settings-screen {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  overflow-y: auto;
+  padding-bottom: 80px;
+}
+
+/* ── Header ── */
+.settings-header {
+  background: var(--teal);
+  padding: 52px 20px 20px;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.settings-header h1 {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  color: #fff;
+}
+
+.settings-subtitle {
+  font-size: 12px;
+  opacity: 0.85;
+  margin-top: 3px;
+}
+
+.back-btn {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  border-radius: 10px;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+.back-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* ── Body ── */
+.settings-body {
+  padding: 20px 16px;
+}
+
+.settings-section-label {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--text-muted);
+  margin: 20px 4px 8px;
+}
+.settings-section-label:first-child {
+  margin-top: 0;
+}
+
+/* ── Group card ── */
+.settings-group {
+  background: var(--white);
+  border-radius: 14px;
+  border: 0.5px solid var(--border);
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+
+/* ── Row ── */
+.setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 13px 16px;
+  gap: 12px;
+}
+
+.setting-row-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+}
+
+.setting-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--blue-bg, #e8f4fb);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.setting-label {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text-primary);
+  line-height: 1.3;
+}
+
+.setting-label-danger {
+  color: #e05252;
+}
+
+.setting-sublabel {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.setting-row-right {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.setting-divider {
+  height: 0.5px;
+  background: var(--border);
+  margin: 0 16px;
+}
+
+/* ── Toggle ── */
+.toggle-switch {
+  width: 48px;
+  height: 28px;
+  border-radius: 14px;
+  border: none;
+  cursor: pointer;
+  position: relative;
+  transition: background 0.2s;
+  display: flex;
+  align-items: center;
+  padding: 0 3px;
+}
+
+.toggle-on {
+  background: var(--teal);
+}
+.toggle-off {
+  background: #d1d1d6;
+}
+
+.toggle-thumb {
+  width: 22px;
+  height: 22px;
+  background: #fff;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+  transition: transform 0.2s;
+  position: absolute;
+}
+
+.toggle-on .toggle-thumb {
+  transform: translateX(20px);
+}
+
+.toggle-off .toggle-thumb {
+  transform: translateX(0);
+}
+
+/* ── Input / Select ── */
+.setting-input {
+  font-size: 14px;
+  color: var(--text-primary);
+  border: 0.5px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 10px;
+  background: var(--bg);
+  width: 130px;
+  outline: none;
+}
+.setting-input:focus {
+  border-color: var(--teal);
+}
+
+.setting-select {
+  font-size: 14px;
+  color: var(--text-primary);
+  border: 0.5px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 10px;
+  background: var(--bg);
+  outline: none;
+  cursor: pointer;
+}
+.setting-select:focus {
+  border-color: var(--teal);
+}
+
+/* ── Erase sub-section ── */
+.erase-sub {
+  padding: 0 16px 14px;
+}
+
+.erase-sub-label {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+}
+
+.erase-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.erase-chip {
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  font-size: 13px;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.erase-chip-active {
+  background: var(--teal);
+  color: #fff;
+  border-color: var(--teal);
+}
+
+.erase-info {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+/* ── Danger button ── */
+.danger-btn {
+  font-size: 13px;
+  font-weight: 600;
+  color: #e05252;
+  background: #fdf1f1;
+  border: 1px solid #f5c6c6;
+  border-radius: 8px;
+  padding: 6px 14px;
+  cursor: pointer;
+  transition: background 0.15s;
+  flex-shrink: 0;
+}
+.danger-btn:hover {
+  background: #fce4e4;
+}
+
+/* ── Save button ── */
+.save-btn {
+  width: 100%;
+  padding: 15px;
+  background: var(--teal);
+  color: #fff;
+  border: none;
+  border-radius: 14px;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  margin-top: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background 0.15s;
+}
+.save-btn:hover {
+  background: var(--teal-dark);
+}
+.save-btn-success {
+  background: #1d9e75;
+}
+
+/* ── Modal ── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 24px;
+}
+
+.modal-card {
+  background: var(--white);
+  border-radius: 18px;
+  padding: 28px 24px;
+  width: 100%;
+  max-width: 320px;
+  text-align: center;
+}
+
+.modal-icon-wrap {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  background: #fdf1f1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+}
+
+.modal-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 10px;
+}
+
+.modal-body {
+  font-size: 14px;
+  color: var(--text-muted);
+  line-height: 1.55;
+  margin-bottom: 22px;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.modal-cancel {
+  flex: 1;
+  padding: 13px;
+  border: 0.5px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg);
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  color: var(--text-primary);
+}
+
+.modal-confirm {
+  flex: 1;
+  padding: 13px;
+  border: none;
+  border-radius: 12px;
+  background: #e05252;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.modal-confirm:hover {
+  background: #c94444;
+}

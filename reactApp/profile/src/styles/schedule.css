@@ -1,3 +1,5 @@
+/* schedule.css — updated with reminder styles */
+
 .schedule {
   flex: 1;
   display: flex;
@@ -82,6 +84,7 @@
 
 .appt-info {
   flex: 1;
+  min-width: 0;
 }
 
 .appt-title {
@@ -109,4 +112,187 @@
 .appt-note {
   font-size: 12px;
   color: var(--text-muted);
+}
+
+/* ── Reminders ── */
+
+.reminders-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  margin-top: 8px;
+}
+
+.add-reminder-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--teal);
+  color: #fff;
+  border: none;
+  border-radius: 20px;
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.add-reminder-btn:hover {
+  background: var(--teal-dark);
+}
+
+.reminder-card {
+  position: relative;
+}
+
+.reminder-icon {
+  background: var(--blue-bg, #e8f4fb);
+}
+
+.delete-reminder-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  opacity: 0.5;
+  transition: opacity 0.15s;
+}
+
+.delete-reminder-btn:hover {
+  opacity: 1;
+}
+
+.empty-reminders {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 28px 16px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+/* ── Modals (shared) ── */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 24px;
+}
+
+.modal-card {
+  background: var(--white);
+  border-radius: 18px;
+  padding: 24px;
+  width: 100%;
+  max-width: 340px;
+}
+
+.modal-title-sched {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 16px;
+}
+
+.modal-body-sched {
+  font-size: 14px;
+  color: var(--text-muted);
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+
+.modal-field {
+  margin-bottom: 14px;
+}
+
+.modal-field-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: block;
+  margin-bottom: 6px;
+}
+
+.modal-field-input {
+  width: 100%;
+  padding: 11px 12px;
+  border: 0.5px solid var(--border);
+  border-radius: 10px;
+  font-size: 15px;
+  color: var(--text-primary);
+  background: var(--bg);
+  outline: none;
+  box-sizing: border-box;
+}
+
+.modal-field-input:focus {
+  border-color: var(--teal);
+}
+
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.modal-cancel {
+  flex: 1;
+  padding: 13px;
+  border: 0.5px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg);
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  color: var(--text-primary);
+}
+
+.modal-confirm {
+  flex: 1;
+  padding: 13px;
+  border: none;
+  border-radius: 12px;
+  background: #e05252;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.modal-confirm:hover {
+  background: #c94444;
+}
+
+.modal-confirm-green {
+  flex: 1;
+  padding: 13px;
+  border: none;
+  border-radius: 12px;
+  background: var(--teal);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.modal-confirm-green:hover {
+  background: var(--teal-dark);
+}
+.modal-confirm-green:disabled {
+  opacity: 0.5;
+  cursor: default;
 }

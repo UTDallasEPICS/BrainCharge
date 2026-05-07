@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import SplashScreen from "./screens/SplashScreen";
 import HomeScreen from "./screens/HomeScreen";
 import ScheduleScreen from "./screens/ScheduleScreen";
@@ -6,37 +6,97 @@ import AddAppointmentScreen from "./screens/AddAppointmentScreen";
 import RemindersScreen from "./screens/RemindersScreen";
 import AddReminderScreen from "./screens/AddReminderScreen";
 import MakeAccount from "./screens/makeAccount";
+import Connection from "./screens/ConnectionPage"; // Ensure this matches your filename
+import SettingsScreen from "./screens/SettingsScreen";
+import SignIn from "./screens/SignIn";
 import BottomNav from "./components/BottomNav";
 import "./styles/global.css";
 
 export default function App() {
   const [screen, setScreen] = useState("splash");
-  const [reminders, setReminders] = useState([
-    { id: 1, name: "Metformin 500mg", meta: "Daily · 8:00 AM & 6:00 PM · With meals", tag: "soon", tagLabel: "Due soon" },
-    { id: 2, name: "Atorvastatin 20mg", meta: "Daily · 8:00 PM · With water", tag: "ok", tagLabel: "Tonight" },
-    { id: 3, name: "Lisinopril 10mg", meta: "Daily · 9:00 AM · Morning", tag: "ok", tagLabel: "Tomorrow" },
-    { id: 4, name: "Sertraline 50mg", meta: "Daily · 7:00 AM · With breakfast", tag: "ok", tagLabel: "Tomorrow" },
-  ]);
+  const [allData, setAllData] = useState([]);
 
-  const hideNav = screen === "splash" || screen === "add-appointment" || screen === "add-reminder" || screen === "make-account";
+  // ── Sync Data Across Screens ──
+  // This effect runs whenever the screen changes, ensuring the Home Screen 
+  // always has the latest info from LocalStorage.
+  useEffect(() => {
+    const loadData = () => {
+      const pills = JSON.parse(localStorage.getItem("app_reminders") || "[]");
+      const appts = JSON.parse(localStorage.getItem("app_schedule") || "[]");
+      
+      // Combine both for the Home Screen overview
+      setAllData([...pills, ...appts]);
+    };
 
-  const addReminder = (r) => setReminders((prev) => [...prev, r]);
-  const deleteReminder = (id) => setReminders((prev) => prev.filter((r) => r.id !== id));
+    loadData();
+    
+    // Listen for storage changes in other tabs/components
+    window.addEventListener("storage", loadData);
+    return () => window.removeEventListener("storage", loadData);
+  }, [screen]); 
+
+  // ── Navigation Helper ──
+  const hideNav = [
+    "splash",
+    "add-appointment",
+    "add-reminder",
+    "make-account",
+    "connection",
+    "sign-in",
+  ].includes(screen);
 
   return (
     <div className="app-shell">
-      
+      {/* ── Onboarding & Auth ── */}
       {screen === "splash" && <SplashScreen navigate={setScreen} />}
-      {screen === "home" && <HomeScreen navigate={setScreen} />}
-      {screen === "schedule" && <ScheduleScreen navigate={setScreen} />}
-      {screen === "add-appointment" && <AddAppointmentScreen navigate={setScreen} />}
       {screen === "make-account" && <MakeAccount navigate={setScreen} />}
+      {screen === "sign-in" && <SignIn navigate={setScreen} />}
+      
+      {/* ── Bluetooth Connection ── */}
+      {/* Note: Connection screen now uses "navigate" for the back button to home */}
+      {screen === "connect" && (
+        <Connection 
+          navigate={setScreen} 
+          onConnected={() => setScreen("home")} 
+        />
+      )}
+
+      {/* ── Main Dashboard ── */}
+      {screen === "home" && (
+        <HomeScreen
+          navigate={setScreen}
+          reminders={allData} 
+        />
+      )}
+
+      {/* ── Recipient Schedule (Care Recipient) ── */}
+      {screen === "schedule" && (
+        <ScheduleScreen navigate={setScreen} />
+      )}
+      {screen === "add-appointment" && (
+        <AddAppointmentScreen navigate={setScreen} />
+      )}
+
+      {/* ── Self-Care Reminders (Caregiver) ── */}
       {screen === "reminders" && (
-        <RemindersScreen navigate={setScreen} reminders={reminders} onDelete={deleteReminder} />
+        <RemindersScreen
+          navigate={setScreen}
+          reminders={allData.filter(item => item.name)} // Filters for pill reminders
+          onDelete={(id) => {
+            const updated = allData.filter(r => r.id !== id);
+            localStorage.setItem("app_reminders", JSON.stringify(updated.filter(i => i.name)));
+            setScreen("reminders"); // Trigger re-render
+          }}
+        />
       )}
       {screen === "add-reminder" && (
-        <AddReminderScreen navigate={setScreen} onSave={addReminder} />
+        <AddReminderScreen navigate={setScreen} />
       )}
+
+      {/* ── Settings ── */}
+      {screen === "settings" && <SettingsScreen navigate={setScreen} />}
+
+      {/* ── Global Navigation ── */}
       {!hideNav && <BottomNav active={screen} navigate={setScreen} />}
     </div>
   );

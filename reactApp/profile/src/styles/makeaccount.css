@@ -43,6 +43,25 @@ body {
   background: var(--white);
 }
 
+.back-button {
+  align-self: flex-start;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  margin-bottom: 16px;
+  padding: 6px;
+  cursor: pointer;
+}
+
+.back-button svg {
+  width: 24px;
+  height: 24px;
+}
+
+.back-button:hover {
+  color: var(--green);
+}
+
 .make-account h1 {
   text-align: center;
   width: 100%;
@@ -247,3 +266,30 @@ button[type="submit"]:disabled {
     grid-template-columns: 1fr;
   }
 }
+
+.back-arrow {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: none;
+  background: rgba(0, 0, 0, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text-primary);
+  transition: background 0.15s;
+}
+ 
+.back-arrow:hover {
+  background: rgba(0, 0, 0, 0.1);
+}
+ 
+/* Ensure the page wrapper has position context */
+.make-account {
+  position: relative;
+}
+ 

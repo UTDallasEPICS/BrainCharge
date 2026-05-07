@@ -1,176 +1,93 @@
+/* addappointment.css */
+
 .add-screen {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  background: var(--white);
-  overflow-y: auto;
-  padding-bottom: 40px;
+  padding: 0 24px; /* Spacious side padding */
+  background-color: white;
+  min-height: 100vh;
+  box-sizing: border-box;
 }
 
 .add-header {
-  padding: 52px 20px 16px;
-  background: var(--white);
-}
-
-.back-btn {
-  width: 36px;
-  height: 36px;
-  background: none;
-  border: none;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 12px;
-  padding: 0;
-  border-radius: 50%;
-  transition: background 0.15s;
-}
-
-.back-btn:hover {
-  background: var(--bg);
+  padding: 40px 0 20px 0;
 }
 
 .add-header h1 {
-  font-size: 26px;
-  font-weight: 700;
-  color: var(--text-primary);
-  letter-spacing: -0.3px;
+  color: black;
+  margin-bottom: 8px;
 }
 
 .add-header p {
-  font-size: 14px;
-  color: var(--text-muted);
-  margin-top: 4px;
-}
-
-.add-body {
-  padding: 8px 20px 20px;
+  color: #7a9aaa;
+  font-size: 0.95rem;
 }
 
 .form-group {
-  margin-bottom: 18px;
+  margin-bottom: 24px;
 }
 
 .form-label {
   display: block;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text-primary);
-  margin-bottom: 7px;
+  color: black;
+  font-weight: 600;
+  margin-bottom: 8px;
+  font-size: 0.9rem;
 }
 
-.form-input {
+.form-input, .form-textarea {
   width: 100%;
-  padding: 13px 14px;
-  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 12px;
-  font-size: 15px;
-  color: var(--text-primary);
-  background: var(--white);
+  padding: 14px 16px;
+  color: #000000;
+  font-size: 1rem;
+  box-sizing: border-box;
   outline: none;
-  font-family: inherit;
-  transition: border-color 0.15s;
 }
 
-.form-input:focus {
-  border-color: var(--teal);
+.form-input:focus, .form-textarea:focus {
+  border-color: var(--teal, #1d9e75);
 }
 
-.form-input::placeholder {
-  color: #c0d4cc;
+.native-picker {
+  cursor: pointer;
+}
+
+/* Adjusting native icon appearance */
+.native-picker::-webkit-calendar-picker-indicator {
+  filter: invert(1); /* Makes the calendar/clock icon white */
+  cursor: pointer;
 }
 
 .form-textarea {
-  width: 100%;
-  padding: 13px 14px;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  font-size: 15px;
-  color: var(--text-primary);
-  background: var(--white);
-  outline: none;
+  min-height: 100px;
   resize: none;
-  height: 96px;
-  font-family: inherit;
-  line-height: 1.5;
-  transition: border-color 0.15s;
-}
-
-.form-textarea:focus {
-  border-color: var(--teal);
-}
-
-.form-textarea::placeholder {
-  color: #c0d4cc;
 }
 
 .toggle-row {
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  padding: 16px 0;
-  border-top: 0.5px solid var(--border);
+  align-items: center;
+  margin: 32px 0;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
 }
 
 .toggle-label {
-  font-size: 15px;
-  font-weight: 500;
-  color: var(--text-primary);
-}
-
-.toggle-switch {
-  width: 52px;
-  height: 30px;
-  border-radius: 15px;
-  border: none;
-  cursor: pointer;
-  position: relative;
-  transition: background 0.2s;
-  padding: 0;
-}
-
-.toggle-switch.on {
-  background: var(--teal);
-}
-
-.toggle-switch.off {
-  background: #cdd8d3;
-}
-
-.toggle-thumb {
-  display: block;
-  width: 24px;
-  height: 24px;
-  background: #fff;
-  border-radius: 50%;
-  position: absolute;
-  top: 3px;
-  transition: left 0.2s;
-}
-
-.toggle-switch.on .toggle-thumb {
-  left: 25px;
-}
-
-.toggle-switch.off .toggle-thumb {
-  left: 3px;
+  color: black;
+  font-size: 0.95rem;
 }
 
 .submit-btn {
   width: 100%;
-  margin-top: 24px;
-  padding: 16px;
-  background: var(--teal);
-  color: #fff;
+  padding: 18px;
+  background: var(--teal, #1d9e75);
+  color: black;
   border: none;
-  border-radius: 14px;
-  font-size: 16px;
-  font-weight: 500;
+  border-radius: 16px;
+  font-weight: 700;
+  font-size: 1.1rem;
   cursor: pointer;
-  transition: background 0.15s;
-}
-
-.submit-btn:hover {
-  background: var(--teal-dark);
+  box-shadow: 0 4px 15px rgba(29, 158, 117, 0.3);
 }

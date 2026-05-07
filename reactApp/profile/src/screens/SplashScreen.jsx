@@ -14,7 +14,7 @@ export default function SplashScreen({ navigate }) {
       <h1 className="splash-title">BrainCharge</h1>
       <p className="splash-subtitle">Support when you need it most</p>
       <div className="splash-actions">
-        <button className="btn-primary" onClick={() => navigate("home")}>
+        <button className="btn-primary" onClick={() => navigate("sign-in")}>
           Sign In
         </button>
         <button className="btn-outline" onClick={() => navigate("make-account")}>
