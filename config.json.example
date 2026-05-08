@@ -1,0 +1,23 @@
+{
+  "_comment": "Copy this to config.json and customize paths for your system",
+  "_comment2": "Paths can be absolute or relative to repo root",
+  
+  "whisper_path_windows": "whisper.cpp/build/bin/Release/whisper-cli.exe",
+  "whisper_path_mac": "whisper.cpp/build/bin/whisper-cli",
+  "whisper_path_linux": "whisper.cpp/build/bin/whisper-cli",
+  "whisper_model": "whisper.cpp/models/ggml-base.en.bin",
+  "piper_model": "",
+  
+  "temp_audio": "input.wav",
+  "temp_transcript": "transcript",
+  "temp_response": "response.wav",
+
+  "context_file": "conversation_context.json",
+  "summary_file": "conversation_summary.json",
+
+  "wake_word": "companion",
+  "sleep_word": "bye companion",
+
+  "listen_duration": 3,
+  "conversation_duration": 5
+}

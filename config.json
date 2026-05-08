@@ -1,17 +1,19 @@
 {
-  "whisper_path": "/Users/sashaankghanta/whisper.cpp/build/bin/whisper-cli",
-  "whisper_model": "/Users/sashaankghanta/whisper.cpp/models/ggml-base.en.bin",
-  "piper_model": "/Users/sashaankghanta/piper_models/en_US-libritts-high.onnx",
+  "whisper_path": "whisper.cpp/build/bin/whisper-cli",
+  "whisper_model": "whisper.cpp/models/ggml-base.en.bin",
+  "piper_model": "piper_models/en_US-libritts-high.onnx",
   "temp_audio": "input.wav",
   "temp_transcript": "transcript",
   "temp_response": "response.wav",
-
   "context_file": "conversation_context.json",
   "summary_file": "conversation_summary.json",
-
   "wake_word": "companion",
-  "sleep_word": "bye companion",
-
+  "sleep_word": "companion",
   "listen_duration": 3,
-  "conversation_duration": 5
+  "conversation_duration": 5,
+  "language": "en",
+  "espeak_voice_en": "en",
+  "espeak_voice_es": "es",
+  "vosk_model_path": "vosk-model-small-en-us-0.15",
+  "vosk_interrupt_enabled": false
 }
