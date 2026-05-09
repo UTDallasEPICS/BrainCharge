@@ -1,19 +1,52 @@
 {
-  "whisper_path": "whisper.cpp/build/bin/whisper-cli",
-  "whisper_model": "whisper.cpp/models/ggml-base.en.bin",
-  "piper_model": "piper_models/en_US-libritts-high.onnx",
-  "temp_audio": "input.wav",
-  "temp_transcript": "transcript",
-  "temp_response": "response.wav",
-  "context_file": "conversation_context.json",
-  "summary_file": "conversation_summary.json",
-  "wake_word": "companion",
-  "sleep_word": "companion",
-  "listen_duration": 3,
-  "conversation_duration": 5,
-  "language": "en",
-  "espeak_voice_en": "en",
-  "espeak_voice_es": "es",
-  "vosk_model_path": "vosk-model-small-en-us-0.15",
-  "vosk_interrupt_enabled": false
+  "whisper_path_windows": "whisper.cpp/build/bin/Release/whisper-cli.exe",
+  "whisper_path_mac":     "whisper.cpp/build/bin/whisper-cli",
+  "whisper_path_linux":   "whisper.cpp/build/bin/whisper-cli",
+  "whisper_model":        "whisper.cpp/models/ggml-base.en.bin",
+  "piper_model":          "",
+
+  "temp_audio":           "input.wav",
+  "temp_transcript":      "transcript",
+  "temp_response":        "response.wav",
+
+  "context_file":         "conversation_context.json",
+  "summary_file":         "conversation_summary.json",
+  "appointments_file":    "appointments.json",
+
+  "wake_word":            "companion",
+  "sleep_word":           "bye companion",
+
+  "language":             "en",
+  "ollama_model":         "gemma3:4b",
+
+  "listen_duration":             3,
+  "wake_word_listen_duration":   3,
+  "conversation_duration":       5,
+
+  "vad_silence_threshold_db":  -40,
+  "vad_silence_duration":       1.5,
+  "vad_min_recording":          0.5,
+  "vad_max_recording":          30,
+  "vad_sample_rate":            16000,
+  "vad_chunk_size":             1024,
+
+  "macos_tts_voice":    "Samantha",
+  "macos_tts_voice_es": "Monica",
+  "espeak_voice_en":    "en",
+  "espeak_voice_es":    "es",
+
+  "vosk_model_path":         "vosk-model-small-en-us-0.15",
+  "vosk_interrupt_enabled":  true,
+  "vosk_min_words":          3,
+  "vosk_warmup_secs":        0.4,
+
+  "connect_arduino":       true,
+  "serial_port_linux":     "/dev/ttyACM0",
+  "serial_port_windows":   "COM3",
+  "baud_rate":             115200,
+  "serial_timeout":        2,
+
+  "_jetson_audio_note": "Set linux_audio_device below to your USB mic (run: arecord -l)",
+  "linux_audio_device":    "default",
+  "linux_audio_backend":   "alsa"
 }

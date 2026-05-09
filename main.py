@@ -1,6 +1,7 @@
 # main.py
 #
 # Companion Robot — Fully Integrated Entry Point
+# Jetson Orin Nano edition
 #
 # Architecture:
 #   The VOICEBOT is the primary system. Hardware (Arduino + CV tracking)
@@ -51,7 +52,7 @@ try:
 except ImportError:
     PYAUDIO_AVAILABLE = False
     print("[!] pyaudio not installed — VAD recording and echo-interrupt disabled.")
-    print("    Install: pip install pyaudio")
+    print("    Install: sudo apt install portaudio19-dev && pip install pyaudio")
 
 try:
     from vosk import Model as VoskModel, KaldiRecognizer
@@ -85,13 +86,7 @@ CONFIG_PATH = "config.json"
 if not os.path.exists(CONFIG_PATH):
     raise FileNotFoundError(
         f"Config file not found: {CONFIG_PATH}\n"
-        "Create one based on the project README. Minimum required keys:\n"
-        "  whisper_model, temp_audio, temp_transcript\n"
-        "Optional hardware keys:\n"
-        "  connect_arduino, serial_port_linux, serial_port_windows, baud_rate\n"
-        "Optional voicebot keys:\n"
-        "  wake_word, sleep_word, language, ollama_model, piper_model,\n"
-        "  vad_silence_threshold_db, vad_silence_duration, vosk_model_path, ..."
+        "Create one based on the project README or JETSON_SETUP.md."
     )
 
 with open(CONFIG_PATH, "r") as f:
@@ -119,7 +114,6 @@ SLEEP_WORD            = config.get("sleep_word", "bye companion").lower()
 LANGUAGE              = config.get("language", "en").lower()
 OLLAMA_MODEL          = config.get("ollama_model", "gemma3:4b")
 
-# Listen / conversation durations (fallback if pyaudio/VAD unavailable)
 WAKE_WORD_LISTEN_DURATION = config.get("wake_word_listen_duration", 3)
 CONVERSATION_DURATION     = config.get("conversation_duration", 5)
 
@@ -131,13 +125,13 @@ VAD_MAX_RECORDING        = config.get("vad_max_recording", 30)
 VAD_SAMPLE_RATE          = config.get("vad_sample_rate", 16000)
 VAD_CHUNK_SIZE           = config.get("vad_chunk_size", 1024)
 
-# TTS voices
+# TTS
 MACOS_TTS_VOICE    = config.get("macos_tts_voice", "Samantha")
 MACOS_TTS_VOICE_ES = config.get("macos_tts_voice_es", "Monica")
 ESPEAK_VOICE_EN    = config.get("espeak_voice_en", "en")
 ESPEAK_VOICE_ES    = config.get("espeak_voice_es", "es")
 
-# Vosk / echo-aware interrupt
+# Vosk
 VOSK_MODEL_PATH        = config.get("vosk_model_path", "vosk-model-small-en-us-0.15")
 VOSK_INTERRUPT_ENABLED = config.get("vosk_interrupt_enabled", True)
 VOSK_MIN_WORDS         = config.get("vosk_min_words", 3)
@@ -148,11 +142,24 @@ CONNECT_ARDUINO = config.get("connect_arduino", True)
 if system == "Windows":
     SERIAL_PORT = config.get("serial_port_windows", config.get("serial_port", "COM3"))
 else:
-    SERIAL_PORT = config.get("serial_port_linux", config.get("serial_port", "/dev/tty.usbmodem21101"))
+    # For Jetson: config.json serial_port_linux wins; fallback auto-detects
+    _cfg_port = config.get("serial_port_linux", config.get("serial_port", ""))
+    if _cfg_port:
+        SERIAL_PORT = _cfg_port
+    elif os.path.exists("/dev/ttyACM0"):
+        SERIAL_PORT = "/dev/ttyACM0"
+    elif os.path.exists("/dev/ttyUSB0"):
+        SERIAL_PORT = "/dev/ttyUSB0"
+    else:
+        SERIAL_PORT = "/dev/ttyACM0"
+
 BAUD_RATE      = config.get("baud_rate", 115200)
 SERIAL_TIMEOUT = config.get("serial_timeout", 2)
 
-# Date formats used when parsing appointment dates from LLM output
+# Linux/Jetson audio settings
+LINUX_AUDIO_DEVICE  = config.get("linux_audio_device", "default")
+LINUX_AUDIO_BACKEND = config.get("linux_audio_backend", "alsa")  # "alsa" or "pulse"
+
 DATE_FORMATS = (
     "%Y-%m-%d", "%B %d, %Y", "%b %d, %Y",
     "%m/%d/%Y", "%B %d %Y", "%b %d %Y",
@@ -163,7 +170,6 @@ DATE_FORMATS = (
 # ---------------------------------------------------------------------------
 
 def phrase(en: str, es: str) -> str:
-    """Return Spanish if language is 'es', otherwise English."""
     return es if LANGUAGE == "es" else en
 
 
@@ -218,17 +224,20 @@ def _macos_say_available() -> bool:
         ["which", "say"], capture_output=True
     ).returncode == 0
 
+
+def _espeak_available() -> bool:
+    return subprocess.run(["which", "espeak"], capture_output=True).returncode == 0
+
+
+def _piper_available() -> bool:
+    """Check if piper TTS binary is installed."""
+    return subprocess.run(["which", "piper"], capture_output=True).returncode == 0
+
 # ---------------------------------------------------------------------------
 # AppointmentManager
 # ---------------------------------------------------------------------------
 
 class AppointmentManager:
-    """
-    Manages appointments persistently in a JSON file.
-    Appointments are never deleted — only their status changes.
-    Past appointments are auto-transitioned to 'completed' at load time.
-    """
-
     def __init__(self, filepath: str):
         self.filepath = filepath
         self.appointments: list = []
@@ -356,11 +365,6 @@ class AppointmentManager:
 # ---------------------------------------------------------------------------
 
 class ConversationContext:
-    """
-    Manages conversation history and non-appointment summary data.
-    Appointment persistence is delegated to AppointmentManager.
-    """
-
     def __init__(self, context_file: str, summary_file: str,
                  appointment_manager: AppointmentManager):
         self.context_file = context_file
@@ -396,7 +400,6 @@ class ConversationContext:
         self._save_context()
 
     def generate_summary(self) -> None:
-        """Ask Ollama to extract structured info from the conversation history."""
         if not self.history:
             return
 
@@ -464,7 +467,6 @@ class ConversationContext:
 
     def get_context_prompt(self) -> str:
         parts = []
-
         if self.summary:
             parts.append("=== Conversation Summary ===")
             if "summary" in self.summary:
@@ -491,13 +493,11 @@ class ConversationContext:
                 for item in self.summary["action_items"]:
                     parts.append(f"- {item}")
                 parts.append("")
-
         if self.history:
             parts.append("=== Recent conversation ===")
             for exchange in self.history[-5:]:
                 parts.append(f"User: {exchange['user']}")
                 parts.append(f"Assistant: {exchange['assistant']}")
-
         return "\n".join(parts)
 
     def clear(self) -> None:
@@ -505,31 +505,51 @@ class ConversationContext:
         self.summary = {}
         self._save_context()
         self._save_summary()
-        # Appointments intentionally NOT cleared — they live in AppointmentManager
 
 # ---------------------------------------------------------------------------
-# Audio recording
+# Audio recording  (Jetson/Linux-aware)
 # ---------------------------------------------------------------------------
+
+def _detect_linux_audio_backend() -> tuple:
+    """
+    Returns (backend, device) for ffmpeg on this Linux/Jetson system.
+    Prefers the config.json setting; auto-detects otherwise.
+    """
+    # Config override wins
+    if LINUX_AUDIO_BACKEND == "pulse" and (
+        os.path.exists("/usr/bin/pulseaudio") or os.path.exists("/usr/bin/pactl")
+    ):
+        return "pulse", LINUX_AUDIO_DEVICE
+
+    # ALSA fallback (always present on Jetson)
+    return "alsa", LINUX_AUDIO_DEVICE
+
 
 def get_audio_input_command(duration: int, output_file: str) -> list:
     if system == "Darwin":
         return ["ffmpeg", "-f", "avfoundation", "-i", ":1",
-                "-t", str(duration), output_file, "-y"]
+                "-t", str(duration), "-ar", "16000", "-ac", "1",
+                output_file, "-y", "-loglevel", "error"]
     elif system == "Windows":
         mic_name = config.get("windows_mic_name", "Microphone (Realtek Audio)")
         return ["ffmpeg", "-f", "dshow", "-i", f"audio={mic_name}",
-                "-t", str(duration), output_file, "-y"]
-    else:  # Linux / Jetson
-        if os.path.exists("/usr/bin/pulseaudio") or os.path.exists("/usr/bin/pactl"):
-            return ["ffmpeg", "-f", "pulse", "-i", "default",
-                    "-t", str(duration), output_file, "-y"]
+                "-t", str(duration), "-ar", "16000", "-ac", "1",
+                output_file, "-y", "-loglevel", "error"]
+    else:
+        # Linux / Jetson Orin Nano
+        backend, device = _detect_linux_audio_backend()
+        if backend == "pulse":
+            return ["ffmpeg", "-f", "pulse", "-i", device,
+                    "-t", str(duration), "-ar", "16000", "-ac", "1",
+                    output_file, "-y", "-loglevel", "error"]
         else:
-            return ["ffmpeg", "-f", "alsa", "-i", "default",
-                    "-t", str(duration), output_file, "-y"]
+            # ALSA — device name like "default", "hw:2,0", "plughw:2,0"
+            return ["ffmpeg", "-f", "alsa", "-i", device,
+                    "-t", str(duration), "-ar", "16000", "-ac", "1",
+                    output_file, "-y", "-loglevel", "error"]
 
 
 def record_audio_vad(output_file: str) -> bool:
-    """Record until VAD detects end-of-speech. Returns True on success."""
     try:
         pa = pyaudio.PyAudio()
         stream = pa.open(
@@ -599,10 +619,6 @@ def record_audio_vad(output_file: str) -> bool:
 
 
 def record_audio(duration: int, output_file: str, use_vad: bool = False) -> bool:
-    """
-    Record audio. Uses VAD if use_vad=True AND pyaudio is available.
-    Falls back to fixed-duration ffmpeg otherwise.
-    """
     if use_vad and PYAUDIO_AVAILABLE:
         return record_audio_vad(output_file)
     try:
@@ -610,7 +626,8 @@ def record_audio(duration: int, output_file: str, use_vad: bool = False) -> bool
         subprocess.run(cmd, check=True, capture_output=True)
         return True
     except subprocess.CalledProcessError as e:
-        print(f"[Audio] FFmpeg error: {e.stderr.decode() if e.stderr else e}")
+        stderr = e.stderr.decode(errors="replace") if e.stderr else str(e)
+        print(f"[Audio] FFmpeg error: {stderr}")
         return False
     except Exception as e:
         print(f"[Audio] Error: {e}")
@@ -627,12 +644,13 @@ def transcribe_audio(audio_file: str) -> str:
             "-m", WHISPER_MODEL,
             "-f", audio_file,
             "-of", TEMP_TRANSCRIPT,
-            "-otxt"
+            "-otxt",
+            "-l", "en",
         ], check=True, capture_output=True)
 
         transcript_file = TEMP_TRANSCRIPT + ".txt"
         if os.path.exists(transcript_file):
-            with open(transcript_file, "r") as f:
+            with open(transcript_file, "r", encoding="utf-8", errors="replace") as f:
                 return f.read().strip()
         return ""
     except subprocess.CalledProcessError as e:
@@ -681,22 +699,25 @@ def generate_response(user_input: str, context: ConversationContext) -> str:
                       "Lo siento, encontré un error.")
 
 # ---------------------------------------------------------------------------
-# Text-to-speech — echo-aware interrupt system
+# Text-to-speech  (espeak on Jetson; 'say' on macOS)
 # ---------------------------------------------------------------------------
 
 def _start_tts(sentence: str):
-    """Launch a TTS subprocess. Returns Popen handle or None."""
     try:
         if _macos_say_available():
             return subprocess.Popen(
                 ["say", "-v", _active_macos_voice(), sentence],
                 stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
             )
-        else:
+        elif _espeak_available():
+            # espeak works well on Jetson; -s 145 slows the default rate slightly
             return subprocess.Popen(
-                ["espeak", "-v", _active_espeak_voice(), sentence],
+                ["espeak", "-v", _active_espeak_voice(), "-s", "145", sentence],
                 stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
             )
+        else:
+            print(f"[TTS] No TTS engine found. Text: {sentence}")
+            return None
     except Exception as e:
         print(f"[TTS] Start error: {e}")
         return None
@@ -714,7 +735,6 @@ def _mic_content_matches_expected(heard_text: str, expected_text: str) -> bool:
 
 
 def _vosk_echo_monitor(tts_proc, expected_sentence: str, interrupt_event: threading.Event):
-    """Background thread: streams mic through Vosk and interrupts TTS if user speaks."""
     try:
         model = VoskModel(VOSK_MODEL_PATH)
         recognizer = KaldiRecognizer(model, VAD_SAMPLE_RATE)
@@ -767,7 +787,6 @@ def _vosk_echo_monitor(tts_proc, expected_sentence: str, interrupt_event: thread
 
 
 def _speak_response_volume_based(text: str) -> bool:
-    """Fallback: volume-based mic monitoring during TTS playback."""
     tts_proc = _start_tts(text)
     if tts_proc is None:
         return False
@@ -826,17 +845,6 @@ def _speak_response_volume_based(text: str) -> bool:
 
 
 def speak_response(text: str) -> bool:
-    """
-    Speak text with optional echo-aware interrupt detection.
-
-    Returns True if user interrupted playback, False if it completed normally.
-
-    Priority:
-      1. vosk_interrupt_enabled = false → straight playback, no monitoring
-      2. pyaudio missing             → straight playback (no monitoring possible)
-      3. Vosk installed + model exists → echo-aware sentence-by-sentence
-      4. Otherwise                  → volume-based VAD fallback
-    """
     if not VOSK_INTERRUPT_ENABLED:
         proc = _start_tts(text)
         if proc:
@@ -857,7 +865,6 @@ def speak_response(text: str) -> bool:
                   "Falling back to volume-based interrupt.")
         return _speak_response_volume_based(text)
 
-    # Echo-aware path: sentence by sentence
     sentences = [s.strip() for s in re.split(r'(?<=[.!?])\s+', text) if s.strip()]
     interrupt_event = threading.Event()
 
@@ -899,10 +906,6 @@ def check_for_sleep_word(text: str) -> bool:
 # ---------------------------------------------------------------------------
 
 def open_arduino():
-    """
-    Open serial connection to the Arduino.
-    Returns a Serial object, or None if unavailable / disabled.
-    """
     if not CONNECT_ARDUINO:
         print("[Hardware] connect_arduino = false — skipping Arduino.")
         return None
@@ -913,20 +916,19 @@ def open_arduino():
     print(f"[Hardware] Connecting to Arduino on {SERIAL_PORT} @ {BAUD_RATE} baud...")
     try:
         arduino = pyserial.Serial(SERIAL_PORT, BAUD_RATE, timeout=SERIAL_TIMEOUT)
-        time.sleep(2)   # Wait for Arduino reset pulse
+        time.sleep(2)
         print(f"[Hardware] Arduino connected on {SERIAL_PORT}.")
         return arduino
     except SerialException as e:
         print(f"[Hardware] Could not connect to Arduino: {e}")
-        print(f"  → Check USB cable, port ({SERIAL_PORT}), and that no other app holds it.")
+        print(f"  → Check: ls /dev/tty{{USB,ACM}}*  |  sudo usermod -aG dialout $USER")
         return None
 
 
 def stop_and_close_arduino(arduino) -> None:
-    """Send a stop command then close the serial port cleanly."""
     if arduino is not None and arduino.is_open:
         try:
-            arduino.write(b"s")   # stop motors before disconnecting
+            arduino.write(b"s")
             time.sleep(0.1)
         except Exception:
             pass
@@ -939,20 +941,8 @@ def stop_and_close_arduino(arduino) -> None:
 
 class CVTrackingThread(threading.Thread):
     """
-    Wraps CVPipeline tracking in a background daemon thread so the voice
-    conversation loop stays responsive at the same time.
-
-    The injected Arduino connection is shared with CVPipeline — main.py owns
-    the single serial port, no duplicate connections.
-
-    IMPORTANT (macOS): cv2.imshow / cv2.waitKey / cv2.destroyAllWindows must
-    be called from the MAIN THREAD on macOS. Calling them from any background
-    thread raises "Unknown C++ exception from OpenCV code". This thread
-    therefore does NO GUI work — it pushes annotated frames into frame_queue
-    (maxsize=1, drop-oldest) and start_active_mode() drains the queue on the
-    main thread inside its own GUI loop.
-
-    Call .request_stop() to signal the loop to exit cleanly.
+    Wraps CVPipeline tracking in a background daemon thread.
+    On Jetson: cv2.imshow is called from main thread (GUI pump below).
     """
 
     def __init__(self, arduino):
@@ -961,7 +951,6 @@ class CVTrackingThread(threading.Thread):
         self._stop_event = threading.Event()
         self.pipeline    = None
         import queue as _queue
-        # maxsize=1: main thread always gets the freshest frame, never queues up
         self.frame_queue = _queue.Queue(maxsize=1)
 
     def request_stop(self) -> None:
@@ -984,7 +973,6 @@ class CVTrackingThread(threading.Thread):
             print("[CV] Tracking thread stopped.")
 
     def _push_frame(self, frame) -> None:
-        """Push an annotated frame; silently drop the stale one if queue is full."""
         try:
             self.frame_queue.put_nowait(frame)
         except Exception:
@@ -995,10 +983,6 @@ class CVTrackingThread(threading.Thread):
                 pass
 
     def _tracking_loop(self) -> None:
-        """
-        Camera + detection loop — NO cv2 GUI calls (macOS main-thread rule).
-        Annotates frames and pushes them to frame_queue for the main thread.
-        """
         import cv2
 
         p = self.pipeline
@@ -1051,19 +1035,10 @@ class CVTrackingThread(threading.Thread):
             self._push_frame(image)
 
 # ---------------------------------------------------------------------------
-# Active mode — voice conversation + hardware running together
+# Active mode
 # ---------------------------------------------------------------------------
 
 def start_active_mode(context: ConversationContext) -> None:
-    """
-    Called once the wake word is detected.
-
-    1. Opens Arduino serial connection (single shared port)
-    2. Starts CV person-tracking in a background thread
-    3. Runs the voice conversation loop in the foreground
-    4. On sleep word or error: stops CV thread, sends stop to Arduino, closes port
-    """
-    # --- Hardware init (only happens AFTER wake word) ---
     arduino   = open_arduino()
     cv_thread = CVTrackingThread(arduino=arduino)
 
@@ -1073,7 +1048,6 @@ def start_active_mode(context: ConversationContext) -> None:
     else:
         print("[CV] Skipping camera tracking (cv_pipeline unavailable).")
 
-    # --- Greet the user ---
     greeting = phrase("Yes, I'm here. How can I help you?",
                       "Sí, aquí estoy. ¿En qué te puedo ayudar?")
     print(f"\nAssistant: {greeting}")
@@ -1084,16 +1058,9 @@ def start_active_mode(context: ConversationContext) -> None:
     else:
         print(f"[Voice] Fixed-duration recording ({CONVERSATION_DURATION}s).")
 
-    if CV_AVAILABLE:
-        print("[CV] Camera window active. Press Q in the window to stop tracking.")
-
-    # macOS requires cv2.imshow/waitKey on the MAIN THREAD.
-    # The tracking thread pushes annotated frames into frame_queue.
-    # pump_gui() drains that queue here so the window stays live.
     import queue as _queue
 
     def pump_gui(timeout_ms: int = 1) -> bool:
-        """Show the latest tracking frame. Returns True if user pressed Q."""
         if not CV_AVAILABLE:
             return False
         import cv2 as _cv2
@@ -1104,7 +1071,6 @@ def start_active_mode(context: ConversationContext) -> None:
             pass
         return (_cv2.waitKey(timeout_ms) & 0xFF) == ord("q")
 
-    # --- Conversation loop ---
     try:
         while True:
             if pump_gui(1):
@@ -1159,7 +1125,6 @@ def start_active_mode(context: ConversationContext) -> None:
                 print("[Voice] User interrupted — listening straight away...")
                 continue
 
-            # Brief cooldown — keep pumping GUI so the window does not freeze
             deadline = time.time() + 0.5
             while time.time() < deadline:
                 if pump_gui(16):
@@ -1170,7 +1135,6 @@ def start_active_mode(context: ConversationContext) -> None:
         cv_thread.request_stop()
         if CV_AVAILABLE and cv_thread.is_alive():
             cv_thread.join(timeout=5)
-        # Destroy OpenCV windows from the main thread (required on macOS)
         if CV_AVAILABLE:
             try:
                 import cv2 as _cv2
@@ -1180,7 +1144,6 @@ def start_active_mode(context: ConversationContext) -> None:
                 pass
         stop_and_close_arduino(arduino)
         print("[→] Hardware stopped. Returning to sleep mode.\n")
-
 
 # ---------------------------------------------------------------------------
 # Main — sleep mode loop
@@ -1193,20 +1156,24 @@ def main() -> None:
     print(f"  Sleep word: \"{SLEEP_WORD}\"")
     print(f"  Language  : {'Spanish (es)' if LANGUAGE == 'es' else 'English (en)'}")
     print(f"  LLM model : {OLLAMA_MODEL}")
-    print(f"  Time      : {get_current_datetime_str()}")
+    print(f"  Platform  : {system} ({platform.machine()})")
+    try:
+        print(f"  Time      : {get_current_datetime_str()}")
+    except ValueError:
+        print(f"  Time      : {datetime.now().isoformat()}")
 
-    # TTS info
     if _macos_say_available():
         print(f"  TTS       : macOS 'say' (voice: {_active_macos_voice()})")
-    else:
+    elif _espeak_available():
         print(f"  TTS       : eSpeak (voice: {_active_espeak_voice()})")
+    else:
+        print("  TTS       : !! No TTS engine found — install espeak !!")
 
-    # VAD / interrupt info
     if PYAUDIO_AVAILABLE:
         print(f"  VAD       : Enabled ({VAD_SILENCE_THRESHOLD_DB} dBFS, "
               f"{VAD_SILENCE_DURATION}s silence)")
     else:
-        print("  VAD       : Disabled (install pyaudio to enable)")
+        print("  VAD       : Disabled (install portaudio19-dev + pyaudio to enable)")
 
     if not VOSK_INTERRUPT_ENABLED:
         print("  Interrupt : Disabled (vosk_interrupt_enabled = false)")
@@ -1217,21 +1184,19 @@ def main() -> None:
     else:
         print("  Interrupt : Volume-based (install vosk for echo-aware)")
 
-    # Hardware info
+    if system not in ("Windows", "Darwin"):
+        backend, device = _detect_linux_audio_backend()
+        print(f"  Audio     : {backend} device={device!r}")
+        print(f"  Serial    : {SERIAL_PORT} @ {BAUD_RATE} baud")
+
     if CONNECT_ARDUINO and PYSERIAL_AVAILABLE:
         print(f"  Arduino   : {SERIAL_PORT} @ {BAUD_RATE} baud (connects on wake)")
     else:
         print("  Arduino   : Disabled")
 
-    if CV_AVAILABLE:
-        print("  CV Track  : Available (starts on wake)")
-    else:
-        print("  CV Track  : Unavailable (cv_pipeline missing)")
-
     print("  Press Ctrl-C to exit at any time")
     print("=" * 60)
 
-    # Load persistent state
     appt_mgr = AppointmentManager(APPOINTMENTS_FILE)
     context  = ConversationContext(CONTEXT_FILE, SUMMARY_FILE, appt_mgr)
 
@@ -1247,14 +1212,10 @@ def main() -> None:
         print(f"[Appointments] {stats['upcoming']} upcoming, "
               f"{stats['completed']} completed, {stats['cancelled']} cancelled")
 
-    # -----------------------------------------------------------------------
-    # Sleep loop — listen for wake word only; hardware is OFF
-    # -----------------------------------------------------------------------
     try:
         while True:
             print("\n[Sleep] Listening for wake word...")
 
-            # Fixed-duration recording in sleep mode (no VAD — keeps CPU low)
             if not record_audio(WAKE_WORD_LISTEN_DURATION, TEMP_AUDIO, use_vad=False):
                 time.sleep(1)
                 continue
@@ -1265,7 +1226,7 @@ def main() -> None:
                 print(f"[Sleep] Heard: {transcription}")
                 if check_for_wake_word(transcription):
                     print(f"\n[Wake] \"{WAKE_WORD}\" detected! Starting active mode...\n")
-                    start_active_mode(context)   # blocks until sleep word or error
+                    start_active_mode(context)
                     print("[Sleep] Returning to sleep mode...")
                     time.sleep(1)
 

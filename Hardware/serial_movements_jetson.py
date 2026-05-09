@@ -1,23 +1,32 @@
 import serial
+import os
 import time
 from cv_pipeline import CVPipeline
 
-# Change SERIAL_PORT to '/dev/ttyUSB0' or '/dev/ttyACM0' for Jetson
-SERIAL_PORT = 'usbmodem21101'
-BAUD_RATE = 115200
+# --- Serial port auto-detection for Jetson ---
+# Arduino Uno / Mega (CDC ACM)     → /dev/ttyACM0
+# USB-to-serial adapters (CH340 etc) → /dev/ttyUSB0
+def _find_serial_port() -> str:
+    for port in ["/dev/ttyACM0", "/dev/ttyACM1", "/dev/ttyUSB0", "/dev/ttyUSB1"]:
+        if os.path.exists(port):
+            return port
+    return "/dev/ttyACM0"   # default; will raise if not present
+
+SERIAL_PORT = _find_serial_port()
+BAUD_RATE   = 115200
 
 
 def serialCom():
     try:
         ser = serial.Serial(SERIAL_PORT, BAUD_RATE, timeout=1)
-        
-        time.sleep(2)
 
-        print("The keyboard strokes go as follows:\n  F for forward\n  B for Backward\n  R for right\n"
-            "  L for left\n  SL for strafe left \n  SR for strafe right")
+        time.sleep(2)   # wait for Arduino reset
+
+        print(f"Connected to Arduino on {SERIAL_PORT}")
+        print("Keyboard commands:\n  F  – forward\n  B  – backward\n  R  – right\n"
+              "  L  – left\n  SL – strafe left\n  SR – strafe right\n  S  – stop")
 
         while True:
-            # Get user input
             val = input("Enter Command: ").strip().lower()
 
             if val == 'f':
@@ -37,19 +46,23 @@ def serialCom():
 
     except serial.SerialException as e:
         print(f"\n[ERROR] Could not connect to {SERIAL_PORT}.")
-        print("Check if the Arduino is plugged in or if the Serial Monitor is still open.")
+        print("  – Check USB cable is plugged in")
+        print("  – Run: ls /dev/tty{USB,ACM}*")
+        print("  – Add yourself to dialout group: sudo usermod -aG dialout $USER")
+        print(f"  – Details: {e}")
     except KeyboardInterrupt:
-        print("\nScript stopped by keyboard interrupt. Try again.")
+        print("\nStopped by keyboard interrupt.")
+
 
 if __name__ == "__main__":
-    #serialCom()
+    # Uncomment to run manual serial control:
+    # serialCom()
+
     wakeWord = ""
     while wakeWord != "companion":
-        wakeWord = input("Enter Command: ").strip().lower()
+        wakeWord = input("Enter wake word: ").strip().lower()
         if wakeWord == "companion":
             pipeline = CVPipeline()
             pipeline.turn_on_camera()
             pipeline.track_movement()
             pipeline.turn_off_camera()
-        
-        
