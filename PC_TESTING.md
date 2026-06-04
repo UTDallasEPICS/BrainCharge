@@ -42,7 +42,7 @@ Install these before starting:
 Open PowerShell in the project folder:
 
 ```powershell
-cd C:\path\to\BrainCharge-integrated-code
+cd C:\path\to\BrainCharge-summer26-test
 ```
 
 ### Python virtual environment (recommended)
