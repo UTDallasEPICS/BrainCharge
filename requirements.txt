@@ -1,0 +1,50 @@
+# ============================================================
+# BrainCharge — Jetson Orin Nano (aarch64 / JetPack 6.x)
+# ============================================================
+#
+# !! DO NOT pip install torch or torchvision from this file !!
+# They must be installed from NVIDIA's JetPack wheels FIRST.
+# See JETSON_SETUP.md for the exact install commands.
+#
+# Install everything else with:
+#   pip install -r requirements.txt --extra-index-url https://pypi.ngc.nvidia.com
+# ============================================================
+
+# --- Vision & ML (CPU-side; torch/torchvision via NVIDIA wheel) ---
+numpy>=1.26.0,<2.0.0          # torch on JetPack 6 requires numpy <2
+pillow>=10.0.0
+scipy>=1.11.0
+matplotlib>=3.8.0
+
+# --- Computer Vision ---
+# Use the system OpenCV that ships with JetPack (has CUDA support) OR:
+# pip install this headless build if system opencv is missing
+opencv-python-headless>=4.8.0
+
+# --- YOLO / Ultralytics ---
+ultralytics>=8.2.0
+
+# --- Serial / Hardware ---
+pyserial>=3.5
+
+# --- Audio recording & VAD ---
+# pyaudio requires portaudio19-dev:
+#   sudo apt install portaudio19-dev python3-pyaudio
+pyaudio>=0.2.14
+
+# --- Speech recognition (wake-word / interrupt) ---
+# Vosk is the lightweight on-device STT used for echo-aware interrupts
+vosk>=0.3.45
+
+# --- TTS ---
+# espeak is used on Linux/Jetson (install via apt):
+#   sudo apt install espeak
+# piper-tts is optional for higher-quality voice (see JETSON_SETUP.md)
+
+# --- LLM (Ollama runs as a separate system service, no pip package needed) ---
+
+# --- Utilities ---
+requests>=2.31.0
+PyYAML>=6.0.1
+python-dateutil>=2.9.0
+packaging>=24.0

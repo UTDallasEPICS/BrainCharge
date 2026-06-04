@@ -1,0 +1,24 @@
+# ============================================================
+# BrainCharge — local / generated files (do not commit)
+# ============================================================
+
+# --- Python ---
+venv/
+.venv/
+env/
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+dist/
+build/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+*.cover
+
+# --- Whisper.cpp (clone, build, download model — see PC_TESTING.md §2 / JETSON_SETUP.md §5.3) ---
+whisper.cpp/
