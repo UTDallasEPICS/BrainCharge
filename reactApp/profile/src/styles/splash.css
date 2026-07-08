@@ -1,0 +1,80 @@
+.splash {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #eaf4f9;
+  padding: 60px 32px;
+}
+
+.splash-icon {
+  width: 80px;
+  height: 80px;
+  background: var(--teal);
+  border-radius: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 28px;
+}
+
+.splash-icon svg {
+  width: 40px;
+  height: 40px;
+}
+
+.splash-title {
+  font-size: 30px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+  letter-spacing: -0.5px;
+}
+
+.splash-subtitle {
+  font-size: 15px;
+  color: var(--text-muted);
+  margin-bottom: 64px;
+}
+
+.splash-actions {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.btn-primary {
+  width: 100%;
+  padding: 16px;
+  background: var(--teal);
+  color: #fff;
+  border: none;
+  border-radius: 50px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.btn-primary:hover {
+  background: var(--teal-dark);
+}
+
+.btn-outline {
+  width: 100%;
+  padding: 15px;
+  background: transparent;
+  color: var(--text-primary);
+  border: 1.5px solid var(--teal);
+  border-radius: 50px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.btn-outline:hover {
+  background: var(--teal-light);
+}

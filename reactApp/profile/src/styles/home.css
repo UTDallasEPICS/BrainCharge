@@ -1,0 +1,308 @@
+.home {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  overflow-y: auto;
+  padding-bottom: 80px;
+}
+
+.home-header {
+  background: var(--teal);
+  padding: 52px 20px 20px;
+  color: #fff;
+}
+
+.header-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.connected-to {
+  font-size: 12px;
+  opacity: 0.85;
+  margin-bottom: 4px;
+}
+
+.home-header h1 {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+}
+
+.icon-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.status-row {
+  display: flex;
+  gap: 10px;
+}
+
+.status-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 20px;
+  padding: 5px 12px;
+  font-size: 13px;
+  color: #fff;
+}
+
+.home-body {
+  padding: 16px;
+}
+
+.companion-card {
+  background: var(--white);
+  border-radius: 16px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  border: 0.5px solid var(--border);
+}
+
+.companion-cta-label {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.companion-cta-title {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.section-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 12px;
+}
+
+.overview-card {
+  background: var(--white);
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  border: 0.5px solid var(--border);
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.card-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.card-icon.blue { background: var(--blue-bg); }
+.card-icon.green { background: var(--green-bg); }
+.card-icon.amber { background: var(--amber-bg); }
+
+.card-text .card-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+}
+
+.card-text .card-sub {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 2px;
+}
+
+.card-text .card-alert {
+  font-size: 13px;
+  color: var(--alert);
+}
+
+.card-text .card-tip {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.55;
+}
+
+
+/* ── Clickable "Connected" status badge ── */
+.status-badge-btn {
+  background: rgba(255, 255, 255, 0.25);
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  font-family: inherit;
+  color: #fff;
+  transition: background 0.15s;
+}
+.status-badge-btn:hover {
+  background: rgba(255, 255, 255, 0.38);
+}
+
+/* ── Reminders section header row ── */
+.reminders-row-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8px;
+  margin-bottom: 12px;
+}
+
+/* Overflow count badge ("+2 more") — also a button */
+.overflow-badge {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--teal);
+  background: var(--blue-bg, #e8f4fb);
+  border: none;
+  border-radius: 20px;
+  padding: 4px 11px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.overflow-badge:hover {
+  background: #d0eaf8;
+}
+
+/* ── Reminder slot: empty / filled variants ── */
+.reminder-slot {
+  transition: opacity 0.2s;
+}
+
+/* Slightly muted when empty */
+.reminder-slot-empty {
+  opacity: 0.55;
+}
+
+/* Dim the icon background when slot is empty */
+.card-icon-dim {
+  background: #f0f0f2 !important;
+}
+
+/* ── Skeleton lines (placeholder content) ── */
+.skel {
+  border-radius: 6px;
+  background: linear-gradient(90deg, #e8e8ec 25%, #f2f2f5 50%, #e8e8ec 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.6s infinite;
+}
+.skel-title  { height: 13px; width: 55%; margin-bottom: 7px; }
+.skel-sub    { height: 11px; width: 35%; margin-bottom: 6px; }
+.skel-alert  { height: 11px; width: 45%; }
+
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ── Muted placeholder text inside filled slots ── */
+.muted-placeholder {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* ── Add / Manage reminders action bar ── */
+.reminders-action-bar {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 13px 16px;
+  background: var(--white);
+  border: 1px dashed var(--teal);
+  border-radius: 14px;
+  cursor: pointer;
+  margin-top: 4px;
+  margin-bottom: 0;
+  transition: background 0.15s, border-color 0.15s;
+}
+.reminders-action-bar:hover {
+  background: var(--blue-bg, #e8f4fb);
+}
+
+.rab-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.rab-plus {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--teal);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.rab-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--teal);
+}
+
+.logout-btn {
+  /* Positioned at the top right of the padded container */
+  position: absolute;
+  top: 40px; 
+  right: 24px; 
+  
+  /* Colors */
+  background-color: #ff4d4d; /* Bright Red */
+  color: white;
+  border: none;
+  
+  /* Sizing & Shape */
+  padding: 8px 14px;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  
+  /* Layout */
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(255, 77, 77, 0.2);
+  transition: all 0.2s ease;
+  z-index: 10; /* Ensures it stays above other elements */
+}
+
+.logout-btn:hover {
+  background-color: #ff3333; /* Slightly darker on hover */
+  transform: translateY(-1px);
+  box-shadow: 0 6px 15px rgba(255, 77, 77, 0.3);
+}
+
+.logout-btn:active {
+  transform: translateY(0);
+}
+
+.calendar-warning {
+  background: #fff8e6;
+  border: 1px solid #f5d98e;
+  color: #8a6d1d;
+  border-radius: 12px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  font-size: 13px;
+}

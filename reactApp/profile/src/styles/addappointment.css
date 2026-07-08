@@ -1,0 +1,108 @@
+/* addappointment.css */
+
+.add-screen {
+  padding: 0 24px; /* Spacious side padding */
+  background-color: white;
+  min-height: 100vh;
+  box-sizing: border-box;
+}
+
+.add-header {
+  padding: 40px 0 20px 0;
+}
+
+.add-header h1 {
+  color: black;
+  margin-bottom: 8px;
+}
+
+.add-header p {
+  color: #7a9aaa;
+  font-size: 0.95rem;
+}
+
+.form-group {
+  margin-bottom: 24px;
+}
+
+.form-label {
+  display: block;
+  color: black;
+  font-weight: 600;
+  margin-bottom: 8px;
+  font-size: 0.9rem;
+}
+
+.form-input, .form-textarea {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 14px 16px;
+  color: #000000;
+  font-size: 1rem;
+  box-sizing: border-box;
+  outline: none;
+}
+
+.form-input:focus, .form-textarea:focus {
+  border-color: var(--teal, #1d9e75);
+}
+
+.native-picker {
+  cursor: pointer;
+}
+
+/* Adjusting native icon appearance */
+.native-picker::-webkit-calendar-picker-indicator {
+  filter: invert(1); /* Makes the calendar/clock icon white */
+  cursor: pointer;
+}
+
+.form-textarea {
+  min-height: 100px;
+  resize: none;
+}
+
+.toggle-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 32px 0;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+}
+
+.toggle-label {
+  color: black;
+  font-size: 0.95rem;
+}
+
+.submit-btn {
+  width: 100%;
+  padding: 18px;
+  background: var(--teal, #1d9e75);
+  color: black;
+  border: none;
+  border-radius: 16px;
+  font-weight: 700;
+  font-size: 1.1rem;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(29, 158, 117, 0.3);
+}
+
+.submit-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.form-error {
+  color: #b42318;
+  background: #fff4f4;
+  border: 1px solid #ffc9c9;
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-bottom: 16px;
+  font-size: 14px;
+}

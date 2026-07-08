@@ -1,0 +1,172 @@
+/* signin.css — mirrors makeaccount.css layout & design language */
+
+.sign-in {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  padding: 60px 24px 40px;
+  box-sizing: border-box;
+}
+
+/* ── Back arrow (shared pattern with makeaccount) ── */
+.back-arrow {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: none;
+  background: rgba(0, 0, 0, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text-primary);
+  transition: background 0.15s;
+}
+.back-arrow:hover {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+/* ── Brand / header block ── */
+.signin-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  margin-bottom: 36px;
+  margin-top: 12px;
+}
+
+.signin-logo {
+  width: 64px;
+  height: 64px;
+  border-radius: 20px;
+  background: var(--teal);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 18px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+.sign-in h1 {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.3px;
+  margin-bottom: 6px;
+}
+
+.subtitle {
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+/* ── Form fields (same as makeaccount) ── */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 18px;
+}
+
+.form-group label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 7px;
+}
+
+.form-group input {
+  padding: 13px 14px;
+  border: 0.5px solid var(--border);
+  border-radius: 12px;
+  font-size: 15px;
+  color: var(--text-primary);
+  background: var(--white);
+  outline: none;
+  transition: border-color 0.15s;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.form-group input:focus {
+  border-color: var(--teal);
+}
+
+.form-group input::placeholder {
+  color: var(--text-muted);
+  opacity: 0.7;
+}
+
+/* ── Forgot password inline link ── */
+.forgot-link {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--teal);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  transition: opacity 0.15s;
+}
+.forgot-link:hover {
+  opacity: 0.75;
+}
+
+/* ── Footer: button + create account prompt ── */
+.signin-footer {
+  margin-top: auto;
+  padding-top: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.signin-btn {
+  width: 100%;
+  padding: 15px;
+  background: var(--teal);
+  color: #fff;
+  border: none;
+  border-radius: 14px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, opacity 0.15s;
+  letter-spacing: 0.1px;
+}
+.signin-btn:hover {
+  background: var(--teal-dark);
+}
+.signin-btn:disabled {
+  opacity: 0.65;
+  cursor: default;
+}
+
+/* ── "Don't have an account?" row ── */
+.signup-prompt {
+  text-align: center;
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.signup-link {
+  background: none;
+  border: none;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--teal);
+  cursor: pointer;
+  padding: 0;
+  transition: opacity 0.15s;
+}
+.signup-link:hover {
+  opacity: 0.75;
+}
