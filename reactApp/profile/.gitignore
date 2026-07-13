@@ -26,3 +26,4 @@ dist-ssr
 # Google Calendar service account (backend only — never commit)
 server/service-account.json
 server/.env
+server/auth.db

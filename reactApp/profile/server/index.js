@@ -1,6 +1,10 @@
 import "dotenv/config";
 import cors from "cors";
 import express from "express";
+import { toNodeHandler, fromNodeHeaders } from "better-auth/node";
+import { auth } from "./auth.js";
+import { ensureAuthDatabase } from "./migrate-auth.js";
+import { requireAuth } from "./middleware/requireAuth.js";
 import {
   createEvent,
   deleteEvent,
@@ -13,15 +17,42 @@ import {
 const app = express();
 const PORT = process.env.PORT || 3001;
 const HOST = process.env.HOST || "127.0.0.1";
+const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN || "http://localhost:5173";
 
-app.use(cors());
+app.use(
+  cors({
+    origin: [CLIENT_ORIGIN, "http://127.0.0.1:5173"],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    credentials: true,
+  })
+);
+
+app.all("/api/auth/*", toNodeHandler(auth));
+
 app.use(express.json());
 
 app.get("/api/health", (_req, res) => {
   res.json({ ok: true, service: "braincharge-calendar-api" });
 });
 
-app.get("/api/calendar/verify", async (_req, res) => {
+app.get("/api/me", async (req, res) => {
+  try {
+    const session = await auth.api.getSession({
+      headers: fromNodeHeaders(req.headers),
+    });
+
+    if (!session) {
+      return res.status(401).json({ user: null, session: null });
+    }
+
+    return res.json(session);
+  } catch (error) {
+    console.error("Session lookup failed:", error.message);
+    return res.status(500).json({ error: "Failed to load session" });
+  }
+});
+
+app.get("/api/calendar/verify", requireAuth, async (_req, res) => {
   try {
     const result = await verifyCalendarAccess();
     res.json(result);
@@ -34,7 +65,7 @@ app.get("/api/calendar/verify", async (_req, res) => {
   }
 });
 
-app.get("/api/events", async (req, res) => {
+app.get("/api/events", requireAuth, async (req, res) => {
   try {
     const timeMin = req.query.timeMin ? new Date(req.query.timeMin) : undefined;
     const timeMax = req.query.timeMax ? new Date(req.query.timeMax) : undefined;
@@ -51,7 +82,7 @@ app.get("/api/events", async (req, res) => {
   }
 });
 
-app.get("/api/events/:eventId", async (req, res) => {
+app.get("/api/events/:eventId", requireAuth, async (req, res) => {
   try {
     const event = await getEvent(req.params.eventId);
     res.json(event);
@@ -64,7 +95,7 @@ app.get("/api/events/:eventId", async (req, res) => {
   }
 });
 
-app.post("/api/events", async (req, res) => {
+app.post("/api/events", requireAuth, async (req, res) => {
   try {
     const event = await createEvent(req.body);
     res.status(201).json(event);
@@ -77,7 +108,7 @@ app.post("/api/events", async (req, res) => {
   }
 });
 
-app.put("/api/events/:eventId", async (req, res) => {
+app.put("/api/events/:eventId", requireAuth, async (req, res) => {
   try {
     const event = await updateEvent(req.params.eventId, req.body);
     res.json(event);
@@ -90,7 +121,7 @@ app.put("/api/events/:eventId", async (req, res) => {
   }
 });
 
-app.delete("/api/events/:eventId", async (req, res) => {
+app.delete("/api/events/:eventId", requireAuth, async (req, res) => {
   try {
     await deleteEvent(req.params.eventId);
     res.json({ success: true });
@@ -103,8 +134,20 @@ app.delete("/api/events/:eventId", async (req, res) => {
   }
 });
 
-app.listen(PORT, HOST, () => {
+await ensureAuthDatabase();
+
+const server = app.listen(PORT, HOST, () => {
   console.log(`Calendar API running at http://${HOST}:${PORT}`);
   console.log(`Health check: http://${HOST}:${PORT}/api/health`);
-  console.log(`Verify access: http://${HOST}:${PORT}/api/calendar/verify`);
+  console.log(`Auth routes: http://${HOST}:${PORT}/api/auth/*`);
+});
+
+server.on("error", (error) => {
+  if (error.code === "EADDRINUSE") {
+    console.error(`\nPort ${PORT} is already in use. Stop the old server first:`);
+    console.error(`  netstat -ano | findstr :${PORT}`);
+    console.error(`  taskkill /PID <PID> /F\n`);
+    process.exit(1);
+  }
+  throw error;
 });

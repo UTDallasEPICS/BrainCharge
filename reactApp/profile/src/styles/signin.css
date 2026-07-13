@@ -170,3 +170,13 @@
 .signup-link:hover {
   opacity: 0.75;
 }
+
+.error-banner {
+  background: #fdf0f0;
+  border: 1px solid #f5c6c6;
+  border-radius: 8px;
+  color: #c0392b;
+  font-size: 13px;
+  padding: 10px 14px;
+  margin: 0 24px 16px;
+}

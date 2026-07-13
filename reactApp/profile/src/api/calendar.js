@@ -2,6 +2,7 @@ const API_BASE = import.meta.env.VITE_API_URL || "/api";
 
 async function request(path, options = {}) {
   const response = await fetch(`${API_BASE}${path}`, {
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
       ...options.headers,
@@ -13,9 +14,11 @@ async function request(path, options = {}) {
 
   if (!response.ok) {
     const message =
-      response.status === 502
-        ? "Calendar server is not running. In a second terminal, run: npm run server"
-        : data.details || data.error || `Request failed (${response.status})`;
+      response.status === 401
+        ? "Please sign in to access your calendar."
+        : response.status === 502
+          ? "Calendar server is not running. In a second terminal, run: npm run server"
+          : data.details || data.error || `Request failed (${response.status})`;
     throw new Error(message);
   }
 

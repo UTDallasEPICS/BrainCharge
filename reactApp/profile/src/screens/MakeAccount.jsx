@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { signUp, getSession } from "../lib/auth-client";
 import "../styles/makeaccount.css";
 
 const PersonIcon = () => (
@@ -34,21 +35,29 @@ export default function MakeAccount({ navigate }) {
     e.preventDefault();
     const errs = validate();
     if (Object.keys(errs).length > 0) { setErrors(errs); return; }
+
     setLoading(true);
-    try {
-      await new Promise((res) => setTimeout(res, 800));
-      navigate("home");
-    } catch {
-      setErrors({ general: "Something went wrong. Please try again." });
-    } finally {
+    setErrors({});
+
+    const { error } = await signUp.email({
+      email: form.email.trim(),
+      password: form.password,
+      name: `${form.firstName.trim()} ${form.lastName.trim()}`,
+    });
+
+    if (error) {
       setLoading(false);
+      setErrors({ general: error.message || "Could not create account. Try a different email." });
+      return;
     }
+
+    await getSession();
+    setLoading(false);
+    navigate("home");
   };
 
   return (
     <div className="make-account">
-
-      {/* ── Back arrow ── */}
       <button className="back-arrow" onClick={() => navigate("splash")} aria-label="Go back">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
           <polyline points="15 18 9 12 15 6" />
@@ -61,7 +70,6 @@ export default function MakeAccount({ navigate }) {
       {errors.general && <p className="error-banner">{errors.general}</p>}
 
       <form onSubmit={handleSubmit} noValidate>
-
         <div className="row-2">
           <div className="form-group">
             <label htmlFor="firstName">First Name</label>
@@ -138,7 +146,6 @@ export default function MakeAccount({ navigate }) {
         <button type="submit" disabled={loading}>
           {loading ? "Creating account…" : "Create Account"}
         </button>
-
       </form>
     </div>
   );

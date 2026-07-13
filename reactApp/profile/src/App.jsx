@@ -1,42 +1,78 @@
 import { useState, useEffect } from "react";
+import { useSession, signOut } from "./lib/auth-client";
 import SplashScreen from "./screens/SplashScreen";
 import HomeScreen from "./screens/HomeScreen";
 import ScheduleScreen from "./screens/ScheduleScreen";
 import AddAppointmentScreen from "./screens/AddAppointmentScreen";
 import RemindersScreen from "./screens/RemindersScreen";
 import AddReminderScreen from "./screens/AddReminderScreen";
-import MakeAccount from "./screens/makeAccount";
-import Connection from "./screens/ConnectionPage"; // Ensure this matches your filename
+import MakeAccount from "./screens/MakeAccount";
+import Connection from "./screens/ConnectionPage";
 import SettingsScreen from "./screens/SettingsScreen";
 import SignIn from "./screens/SignIn";
 import BottomNav from "./components/BottomNav";
+import NotificationCenter from "./components/NotificationCenter";
 import "./styles/global.css";
 
+const PUBLIC_SCREENS = new Set(["splash", "sign-in", "make-account"]);
+
+function AuthLoading({ message = "Loading..." }) {
+  return (
+    <div className="app-shell auth-loading">
+      <p>{message}</p>
+    </div>
+  );
+}
+
+function RequireAuth({ session, isPending, children, message = "Signing you in..." }) {
+  if (isPending) return <AuthLoading message={message} />;
+  if (!session) return null;
+  return children(session);
+}
+
 export default function App() {
+  const { data: session, isPending } = useSession();
   const [screen, setScreen] = useState("splash");
   const [allData, setAllData] = useState([]);
   const [editingAppointment, setEditingAppointment] = useState(null);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  // ── Sync Data Across Screens ──
-  // This effect runs whenever the screen changes, ensuring the Home Screen 
-  // always has the latest info from LocalStorage.
+  useEffect(() => {
+    if (isPending || isLoggingOut) return;
+
+    if (session && PUBLIC_SCREENS.has(screen)) {
+      setScreen("home");
+      return;
+    }
+
+    if (!session && !PUBLIC_SCREENS.has(screen)) {
+      setScreen("sign-in");
+    }
+  }, [session, isPending, screen, isLoggingOut]);
+
+  const navigate = (next) => {
+    setScreen(next);
+  };
+
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    setScreen("sign-in");
+    await signOut();
+    setIsLoggingOut(false);
+  };
+
   useEffect(() => {
     const loadData = () => {
       const pills = JSON.parse(localStorage.getItem("app_reminders") || "[]");
       const appts = JSON.parse(localStorage.getItem("app_schedule") || "[]");
-      
-      // Combine both for the Home Screen overview
       setAllData([...pills, ...appts]);
     };
 
     loadData();
-    
-    // Listen for storage changes in other tabs/components
     window.addEventListener("storage", loadData);
     return () => window.removeEventListener("storage", loadData);
-  }, [screen]); 
+  }, [screen]);
 
-  // ── Navigation Helper ──
   const hideNav = [
     "splash",
     "add-appointment",
@@ -46,66 +82,91 @@ export default function App() {
     "sign-in",
   ].includes(screen);
 
+  if (isPending && !PUBLIC_SCREENS.has(screen)) {
+    return <AuthLoading />;
+  }
+
   return (
     <div className="app-shell">
-      {/* ── Onboarding & Auth ── */}
-      {screen === "splash" && <SplashScreen navigate={setScreen} />}
-      {screen === "make-account" && <MakeAccount navigate={setScreen} />}
-      {screen === "sign-in" && <SignIn navigate={setScreen} />}
-      
-      {/* ── Bluetooth Connection ── */}
-      {/* Note: Connection screen now uses "navigate" for the back button to home */}
+      {screen === "splash" && <SplashScreen navigate={navigate} />}
+      {screen === "make-account" && <MakeAccount navigate={navigate} />}
+      {screen === "sign-in" && <SignIn navigate={navigate} />}
+
       {screen === "connect" && (
-        <Connection 
-          navigate={setScreen} 
-          onConnected={() => setScreen("home")} 
-        />
+        <RequireAuth session={session} isPending={isPending}>
+          {() => (
+            <Connection
+              navigate={navigate}
+              onConnected={() => navigate("home")}
+            />
+          )}
+        </RequireAuth>
       )}
 
-      {/* ── Main Dashboard ── */}
       {screen === "home" && (
-        <HomeScreen navigate={setScreen} />
+        <RequireAuth session={session} isPending={isPending}>
+          {(authSession) => (
+            <HomeScreen navigate={navigate} user={authSession.user} onLogout={handleLogout} />
+          )}
+        </RequireAuth>
       )}
 
-      {/* ── Recipient Schedule (Care Recipient) ── */}
       {screen === "schedule" && (
-        <ScheduleScreen
-          navigate={setScreen}
-          onEditAppointment={(appt) => {
-            setEditingAppointment(appt);
-            setScreen("add-appointment");
-          }}
-        />
+        <RequireAuth session={session} isPending={isPending}>
+          {() => (
+            <ScheduleScreen
+              navigate={navigate}
+              onEditAppointment={(appt) => {
+                setEditingAppointment(appt);
+                navigate("add-appointment");
+              }}
+            />
+          )}
+        </RequireAuth>
       )}
+
       {screen === "add-appointment" && (
-        <AddAppointmentScreen
-          navigate={setScreen}
-          editingAppointment={editingAppointment}
-          onClearEdit={() => setEditingAppointment(null)}
-        />
+        <RequireAuth session={session} isPending={isPending}>
+          {() => (
+            <AddAppointmentScreen
+              navigate={navigate}
+              editingAppointment={editingAppointment}
+              onClearEdit={() => setEditingAppointment(null)}
+            />
+          )}
+        </RequireAuth>
       )}
 
-      {/* ── Self-Care Reminders (Caregiver) ── */}
       {screen === "reminders" && (
-        <RemindersScreen
-          navigate={setScreen}
-          reminders={allData.filter(item => item.name)} // Filters for pill reminders
-          onDelete={(id) => {
-            const updated = allData.filter(r => r.id !== id);
-            localStorage.setItem("app_reminders", JSON.stringify(updated.filter(i => i.name)));
-            setScreen("reminders"); // Trigger re-render
-          }}
-        />
+        <RequireAuth session={session} isPending={isPending}>
+          {() => (
+            <RemindersScreen
+              navigate={navigate}
+              reminders={allData.filter((item) => item.name)}
+              onDelete={(id) => {
+                const updated = allData.filter((r) => r.id !== id);
+                localStorage.setItem("app_reminders", JSON.stringify(updated.filter((i) => i.name)));
+                navigate("reminders");
+              }}
+            />
+          )}
+        </RequireAuth>
       )}
+
       {screen === "add-reminder" && (
-        <AddReminderScreen navigate={setScreen} />
+        <RequireAuth session={session} isPending={isPending}>
+          {() => <AddReminderScreen navigate={navigate} />}
+        </RequireAuth>
       )}
 
-      {/* ── Settings ── */}
-      {screen === "settings" && <SettingsScreen navigate={setScreen} />}
+      {screen === "settings" && (
+        <RequireAuth session={session} isPending={isPending}>
+          {() => <SettingsScreen navigate={navigate} />}
+        </RequireAuth>
+      )}
 
-      {/* ── Global Navigation ── */}
-      {!hideNav && <BottomNav active={screen} navigate={setScreen} />}
+      {session && !hideNav && <NotificationCenter navigate={navigate} />}
+      {session && !hideNav && <BottomNav active={screen} navigate={navigate} />}
     </div>
   );
 }

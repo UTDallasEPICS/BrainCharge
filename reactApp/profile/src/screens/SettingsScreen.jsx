@@ -75,6 +75,7 @@ export default function SettingsScreen({ navigate }) {
     setSettings((prev) => {
       const next = { ...prev, [key]: value };
       localStorage.setItem("app_settings", JSON.stringify(next));
+      window.dispatchEvent(new Event("settings-updated"));
       return next;
     });
   };

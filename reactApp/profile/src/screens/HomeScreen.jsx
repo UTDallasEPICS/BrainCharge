@@ -16,7 +16,7 @@ function timeToMinutes(item) {
   return Infinity;
 }
 
-export default function HomeScreen({ navigate }) {
+export default function HomeScreen({ navigate, user, onLogout }) {
   const [allEvents, setAllEvents] = useState([]);
   const [calendarError, setCalendarError] = useState("");
 
@@ -59,15 +59,15 @@ export default function HomeScreen({ navigate }) {
     <div className="home">
       <div className="home-header">
         <div className="header-top">
-          <button className="logout-btn" onClick={() => navigate("splash")}>
+          <button className="logout-btn" onClick={onLogout}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" />
             </svg>
             Log Out
             </button>
           <div>
-            <p className="connected-to">Connected to</p>
-            <h1>User's Companion</h1>
+            <p className="connected-to">Signed in as</p>
+            <h1>{user?.name || "User's Companion"}</h1>
           </div>
           <button className="icon-btn" onClick={() => navigate("settings")}>
              {/* Settings SVG */}
