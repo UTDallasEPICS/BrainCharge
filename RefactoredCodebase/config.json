@@ -1,4 +1,20 @@
 {
+
+  "audio": {
+    "windows_mic_name": "Microphone Array (Realtek(R) Audio)",
+
+    "wake_word": "companion",
+    "sleep_word": "bye companion",
+
+    "whisper": {
+      "binary": "C:/Users/nnorm/CLionProjects/whisper.cpp/cmake-build-debug/bin/whisper-cli.exe",
+      "model": "C:/Users/nnorm/CLionProjects/whisper.cpp/models/ggml-base.en.bin"
+    },
+
+    "wake_word_listen_duration": 3,
+    "conversation_duration": 5
+  },
+
   "_comment": "Copy this to config.json and customize paths for your system",
   "_comment2": "Paths can be absolute or relative to repo root",
   
@@ -17,18 +33,13 @@
   "context_file": "conversation_context.json",
   "summary_file": "conversation_summary.json",
 
-  "wake_word": "companion",
-  "sleep_word": "bye companion",
 
   "listen_duration": 3,
   "conversation_duration": 5,
 
-  "windows_mic_name": "Microphone Array (Realtek(R) Audio)",
   "ollama_model": "gemma3:4b",
 
   "runtime_mode": "pc",
   "enable_cv": true,
   "connect_arduino": false
-
 }
-

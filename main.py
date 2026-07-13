@@ -980,7 +980,6 @@ def speak_response(text: str) -> bool:
 def check_for_wake_word(text: str) -> bool:
     return WAKE_WORD in text.lower()
 
-
 def check_for_sleep_word(text: str) -> bool:
     return SLEEP_WORD in text.lower()
 
