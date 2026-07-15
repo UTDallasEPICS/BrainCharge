@@ -185,5 +185,18 @@ BrainCharge/
 ### Unicode decode errors (Windows)
 - Fixed in current version (UTF-8 encoding with error replacement)
 
+### Emotional memory database system
+- Remembers the last 10 session readings with caregiver
+- Session will have the date, personId, vision,text, and speech emotion summary from the session, along with their corresponding confidence levels.
+```
+summary:  {'vision_emotion': 'Sad', 'text_emotion': 'Sad', 'speech_emotion': 'Anxious'}
+[('2026-07-15 19:26:25', 'I had a had a good day', 'Sad', 'Sad', 'Anxious'), ('2026-07-15 19:25:54', 'I had a had a good day', 'Sad', 'Sad', 'Anxious'), ('2026-07-15 19:24:42', 'I had a had a good day', 'Positive', 'Sad', 'Anxious'), ('2026-07-15 18:44:58', 'I had a had a horrible day', 'Positive', 'Sad', 'Anxious'), ('2026-07-15 18:44:46', 'I had a had an amazing day', 'Positive', 'Sad', 'Anxious'), ('2026-07-15 18:44:15', 'I had a had a not a good day', 'Positive', 'Sad', 'Anxious'), ('2026-07-15 18:43:32', 'I had a had a okay day', 'Positive', 'Sad', 'Anxious'), ('2026-07-15 18:43:06', 'I had a had a good day', 'Positive', 'Sad', 'Anxious'), ('2026-07-15 18:36:48', 'I had a bad day', 'Positive', 'Sad', 'Anxious'), ('2026-07-15 09:41:20', 'I had a bad day', 'Positive', 'Sad', 'Anxious')]
+```
+
+
+
+
+
+
 
 # Goodluck!!! :)
