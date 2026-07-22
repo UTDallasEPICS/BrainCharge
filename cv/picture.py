@@ -3,13 +3,10 @@ from ultralytics import YOLO
 import cv2
 from cv2.typing import MatLike
 from pathlib import Path
-import torch
-from torch import nn
-from torch import device, cuda, Tensor
-from torchvision.transforms import v2
-from torchvision.models import EfficientNet, efficientnet_b2
-from PIL import Image
+from torch import device, cuda
 import time
+from hsemotion_detector import EmotionDetector
+import numpy as np
 
 # FEATURE FLAG (Sort of)
 CONNECT_ARDUINO_FLAG: bool = False
@@ -18,9 +15,8 @@ CONNECT_ARDUINO_FLAG: bool = False
 DEVICE: device = "cuda" if cuda.is_available() else "cpu"
 PERSON_DETECTOR_FILEPATH = "yolov8n.pt"
 FACE_DETECTOR_FILEPATH = "./yolov8n-face-lindevs.pt"
-EMOTION_CLASSIFIER_FILEPATH = "./emotions_model.pt"
-AVAILABLE_EMOTIONS = ["Angry", "Fear", "Happy", "Neutral", "Sad"]
-NUM_TOP_EMOTIONS = 2
+EMOTION_CLASSIFIER_FILEPATH = "./hsemotion_detector.py"
+NUM_TOP_EMOTIONS = 3
 
 # Check and create if needed the file needed for the file
 try:
@@ -28,12 +24,12 @@ try:
     DIRECTORY_PATH = Path(DIRECTORY_NAME)
 
     DIRECTORY_PATH.mkdir(parents=True, exist_ok=True)
-    print(f"Image folder ready at: {DIRECTORY_NAME}")
+    print(f"Image folder ready at: {DIRECTORY_NAME}")#file directory where the picture taken will be stored
 except Exception as e:
     raise Exception("Error finding or creating directory to store images: ", e)
 
 class CVPipeline:
-    def __init__(self):
+    def __init__(self):#initiate detectors
         self.camera: Optional[cv2.VideoCapture] = None
         self.person_detector = self._init_detector(
             PERSON_DETECTOR_FILEPATH, 
@@ -44,10 +40,9 @@ class CVPipeline:
             DEVICE
         )
         self.emotion_classifier = self._init_emotion_classifier(
-            EMOTION_CLASSIFIER_FILEPATH, 
-            DEVICE
+            EMOTION_CLASSIFIER_FILEPATH,
         )
-        self.emotion_classifier.eval()
+        self.emotion_labels = self.emotion_classifier.model.idx_to_class
 
         # For person tracking
         self.target: Optional[int] = None
@@ -63,37 +58,10 @@ class CVPipeline:
         return detector
     
 
-    def _init_emotion_classifier(self, filepath: str, device: device) -> EfficientNet:
+    def _init_emotion_classifier(self, filepath: str):
         """Helper method: Initialize the emotional classification model"""
-        efficientnet = efficientnet_b2()
-        # Modify the linear head
-        efficientnet.classifier = nn.Sequential(
-            nn.Linear(1408, 512, bias=True),
-            nn.ReLU(inplace=True),
-            nn.Dropout(),
-            nn.Linear(512, 5, bias=True)
-        )
+        return EmotionDetector()
 
-        efficientnet.load_state_dict(torch.load(filepath, map_location=device))
-        return efficientnet.to(device)
-
-
-    def _convert_to_tensor(self, image: MatLike, device: device) -> Tensor:
-        """Helper method: Convert the cv2 image to torch tensor"""
-        modified = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)  
-        modified = Image.fromarray(modified)
-
-        transform = v2.Compose([
-            v2.Lambda(lambda x: x.convert("L").convert("RGB")),
-            v2.Resize([288, 288]),
-            v2.ToImage(),
-            v2.ToDtype(torch.float32, scale=True),
-            v2.Normalize(mean=[0.485, 0.456, 0.406],
-                        std=[0.229, 0.224, 0.225])
-        ])
-
-        return transform(modified).unsqueeze(0).to(device)
-    
 
     def camera_on(self) -> bool:
         """Check if the camera is on"""
@@ -322,19 +290,20 @@ class CVPipeline:
                 x1, y1, x2, y2 = self._expand_face(w, h, x1, y1, x2, y2)
                 face_region: MatLike = image[y1:y2, x1:x2]
 
-                with torch.no_grad():
-                    tensor = self._convert_to_tensor(face_region, DEVICE)
-                    output = torch.softmax(self.emotion_classifier(tensor), dim=1)
-                    probs, labels = torch.topk(output, NUM_TOP_EMOTIONS)
-                    # Get the top 3 emotions but if confidence in one of the top 2
-                    # is too low, then that emotion is dropped
-                    emotions = [
-                        {
-                            "emotion": AVAILABLE_EMOTIONS[l],
-                            "confidence": round(probs[0][i].item(), 2)
-                        } 
-                        for i, l in enumerate(labels[0].cpu().numpy()) if probs[0][i].item() > 0.1
-                    ]
+                #change cv2 from BGR to RGB since hsemotion expects RGB
+                face_rgb = cv2.cvtColor(face_region, cv2.COLOR_BGR2RGB)
+
+
+                _, scores = self.emotion_classifier.predict(face_rgb)
+
+                top_indices = np.argsort(scores)[::-1][:NUM_TOP_EMOTIONS]
+                emotions = [
+                    {
+                        "emotion": self.emotion_labels[i],
+                        "confidence": round(float(scores[i]), 2)
+                    }
+                    for i in top_indices if scores[i] > 0.1
+                ]
                     
                 cv2.rectangle(image, (x1, y1), (x2, y2), (0, 0, 255), 2)
                 cv2.putText(
@@ -357,6 +326,8 @@ class CVPipeline:
                     cv2.FONT_HERSHEY_SIMPLEX, 1.5, (255, 0, 0), 5
                 )
         except Exception as e:
+            import traceback
+            traceback.print_exc()
             cv2.putText(
                 image, 
                 f"Error during emotional analysis {e}", 
@@ -373,5 +344,8 @@ if __name__ == "__main__":
     conversation_mode = False
 
     cv_pipeline.turn_on_camera()
-    cv_pipeline.track_movement()
+    # will take a picture and give the top three emotions detected by confidence
+    emotions = cv_pipeline.execute()
+    print(emotions)
+    #cv_pipeline.track_movement()
     cv_pipeline.turn_off_camera()
