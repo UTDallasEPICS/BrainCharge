@@ -21,7 +21,7 @@ class AudioService:
         if system == "Darwin":
             self.ffmpeg_input_args = ["-f", "avfoundation", "-i", ":1"]
         elif system == "Windows":
-            # region Windows Mic setup
+            # region Windows Mic input setup
             configured = audio_config.get("windows_mic_name", "").strip()
             try:
                 result = subprocess.run(
@@ -55,7 +55,7 @@ class AudioService:
             # endregion
             self.ffmpeg_input_args = ["-f", "dshow", "-i", f"audio={selected_mic}"]
         else:
-            # region Linux Mic setup
+            # region Linux Mic input setup
 
             backend = audio_config.get("linux_audio_backend", "alsa")
             device = audio_config.get("linux_audio_device", "default")
@@ -69,17 +69,18 @@ class AudioService:
             self.ffmpeg_input_args = ["-f", backend, "-i", device]
 
     # region Public functions
+    # Make this async and generic word?
     def await_wake_word(self) -> None:
-        """Yields current code until it receives wake word
         """
-        wakeWordFound:bool = False
+            Yields current code until it receives wake word
+        """
         # loading config options from storage
         listenDuration:int = self.config["wake_word_listen_duration"]
 
-        while not wakeWordFound:
+        # await loop
+        while True:
             print("\n[Sleep] Listening for wake word...")
-
-            if not self._listen(listenDuration, use_vad=False):
+            if not self.listen(listenDuration, use_vad=False):
                 # time.sleep(1) # Delay between starting listening where it will be doing nothing.
                 continue
 
@@ -95,17 +96,19 @@ class AudioService:
                 #     print("[Sleep] Returning to sleep mode...")
                 #     time.sleep(1)
             time.sleep(0.3)
-    # endregion
 
-    # region Internal private code
-    def _listen(self, duration:int,use_vad:bool=False):
-        """Records audio from the configured microphone.
+    # 2 listen types with diffrent functionality
+    # First listen type is fixed duration the other is VAD
+    # Fixed duration is syncronous
+
+    def listen(self, duration:int,use_vad:bool=False):
+        """Records audio from the microphone configured in init
 
         Args:
             duration: Length of time that will be recorded and processed
-            use_vad: Whether to use voice activity detection.
+            use_vad: Whether to use voice activity detection
         Returns:
-            True if recording succeeded, otherwise False.
+            True if recording succeeded, otherwise False
         """
         if use_vad and self.pyaudio:
             # VAD code
@@ -130,26 +133,61 @@ class AudioService:
         except Exception as e:
             print(f"[Audio] Error: {e}")
             return False
+    # endregion
 
-    def _transcribe_audio(self, audio_file:str) -> str:
-        try:
-            whisperConfig = self.config.get("whisper")
+    # region Internal private code
+    # def listen(self, duration:int,use_vad:bool=False):
+    #     """Records audio from the microphone configured in init
+    #
+    #     Args:
+    #         duration: Length of time that will be recorded and processed
+    #         use_vad: Whether to use voice activity detection
+    #     Returns:
+    #         True if recording succeeded, otherwise False
+    #     """
+    #     if use_vad and self.pyaudio:
+    #         # VAD code
+    #         pass
+    #
+    #     try:
+    #         subprocess.run([
+    #             "ffmpeg",
+    #             *self.ffmpeg_input_args,
+    #             "-t", str(duration),
+    #             "-ar", "16000",
+    #             "-ac", "1",
+    #             self.audio_output_path,
+    #             "-y",
+    #             "-loglevel", "error",
+    #         ], check=True, capture_output=True)
+    #         return True
+    #     except subprocess.CalledProcessError as e:
+    #         stderr = e.stderr.decode(errors="replace") if e.stderr else str(e)
+    #         print(f"[Audio] FFmpeg error: {stderr}")
+    #         return False
+    #     except Exception as e:
+    #         print(f"[Audio] Error: {e}")
+    #         return False
 
-            subprocess.run([
-                whisperConfig["binary"],
-                "-m", whisperConfig["model"],
-                "-f", audio_file,
-                "-of", self.transcript_output_path,
-                "-otxt",
-                "-l", "en",
-            ], check=True, capture_output=True)
-
-            transcript_file = self.transcript_output_path + ".txt"
-            if os.path.exists(transcript_file):
-                with open(transcript_file, "r", encoding="utf-8", errors="replace") as f:
-                    return f.read().strip()
-            return ""
-        except subprocess.CalledProcessError as e:
-            print(f"[Whisper] Error: {e}")
-            return ""
+    # def _transcribe_audio(self, audio_file:str) -> str:
+    #     try:
+    #         whisperConfig = self.config.get("whisper")
+    #
+    #         subprocess.run([
+    #             whisperConfig["binary"],
+    #             "-m", whisperConfig["model"],
+    #             "-f", audio_file,
+    #             "-of", self.transcript_output_path,
+    #             "-otxt",
+    #             "-l", "en",
+    #         ], check=True, capture_output=True)
+    #
+    #         transcript_file = self.transcript_output_path + ".txt"
+    #         if os.path.exists(transcript_file):
+    #             with open(transcript_file, "r", encoding="utf-8", errors="replace") as f:
+    #                 return f.read().strip()
+    #         return ""
+    #     except subprocess.CalledProcessError as e:
+    #         print(f"[Whisper] Error: {e}")
+    #         return ""
     # endregion

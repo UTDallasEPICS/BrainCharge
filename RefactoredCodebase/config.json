@@ -1,7 +1,7 @@
 {
-
+  "language": "en",
   "audio": {
-    "windows_mic_name": "Microphone Array (Realtek(R) Audio)",
+    "input_device": "Microphone (Realtek Audio)",
 
     "wake_word": "companion",
     "sleep_word": "bye companion",
@@ -15,9 +15,14 @@
     "conversation_duration": 5
   },
 
+
+
+
+  "_comment_main": "Bellow this is old configs that need to be reworked. Ignore them",
+
   "_comment": "Copy this to config.json and customize paths for your system",
   "_comment2": "Paths can be absolute or relative to repo root",
-  
+
   "whisper_path_windows": "C:/Users/nnorm/CLionProjects/whisper.cpp/cmake-build-debug/bin/whisper-cli.exe",
   "whisper_path_mac": "whisper.cpp/build/bin/whisper-cli",
   "whisper_path_linux": "whisper.cpp/build/bin/whisper-cli",
