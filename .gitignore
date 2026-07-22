@@ -1,0 +1,40 @@
+# External dependencies
+whisper.cpp/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+*.egg-info/
+dist/
+build/
+
+# Local environment config
+.env
+config.json
+
+# Audio files (recordings and transcripts)
+*.wav
+transcript*.txt
+response*.wav
+input.wav
+
+# Conversation context files
+conversation_context.json
+conversation_summary.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db

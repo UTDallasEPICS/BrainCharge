@@ -1,0 +1,70 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --teal: #2596BE;
+  --teal-dark: #1a7a9e;
+  --teal-light: #e8f5fb;
+  --bg: #f0f6f9;
+  --white: #ffffff;
+  --text-primary: #1a2e27;
+  --text-muted: #7a9aaa;
+  --border: #d0e4ed;
+  --alert: #e07a3a;
+  --blue-bg: #e6f1fb;
+  --blue-icon: #2596BE;
+  --green-bg: #e8f5ee;
+  --green-icon: #1d9e75;
+  --amber-bg: #faeeda;
+  --amber-icon: #ba7517;
+}
+
+/* Dark mode variables - Anahi Fuentes*/
+
+.app-shell.dark {
+  --teal: #47b7dc;
+  --teal-dark: #2596be;
+  --teal-light: #123041;
+  --bg: #0f172a;
+  --white: #111827;
+  --text-primary: #f8fafc;
+  --text-muted: #94a3b8;
+  --border: #334155;
+  --alert: #f59e0b;
+  --blue-bg: #10243a;
+  --blue-icon: #47b7dc;
+  --green-bg: #10281f;
+  --green-icon: #34d399;
+  --amber-bg: #3b2a0d;
+  --amber-icon: #fbbf24;
+}
+/* End of Dark mode variables - Anahi Fuentes*/
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: #e5e9e7;
+  min-height: 100vh;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.app-shell {
+  width: 375px;
+  min-height: 100vh;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+}
+
+.auth-loading {
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  font-size: 15px;
+}

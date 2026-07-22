@@ -1,0 +1,20 @@
+{
+  "name": "braincharge-calendar-server",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js",
+    "test-calendar": "node test-calendar.js",
+    "migrate-auth": "node migrate-auth.js"
+  },
+  "dependencies": {
+    "better-auth": "^1.6.23",
+    "better-sqlite3": "^12.11.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "googleapis": "^144.0.0"
+  }
+}
