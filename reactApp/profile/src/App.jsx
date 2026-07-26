@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { useSession, signOut } from "./lib/auth-client";
 import SplashScreen from "./screens/SplashScreen";
 import HomeScreen from "./screens/HomeScreen";
@@ -12,7 +12,23 @@ import SettingsScreen from "./screens/SettingsScreen";
 import SignIn from "./screens/SignIn";
 import BottomNav from "./components/BottomNav";
 import NotificationCenter from "./components/NotificationCenter";
+import CalendarErrorBoundary from "./components/CalendarErrorBoundary";
 import "./styles/global.css";
+
+function CalendarLoading() {
+  return (
+    <div className="calendar-screen calendar-loading-screen">
+      <div className="calendar-header">
+        <h1>Calendar</h1>
+        <p>Loading calendar view...</p>
+      </div>
+    </div>
+  );
+}
+
+const CalendarScreen = lazy(() =>
+  import("./screens/CalendarScreen.jsx").then((module) => ({ default: module.default })),
+);
 
 const PUBLIC_SCREENS = new Set(["splash", "sign-in", "make-account"]);
 
@@ -35,6 +51,8 @@ export default function App() {
   const [screen, setScreen] = useState("splash");
   const [allData, setAllData] = useState([]);
   const [editingAppointment, setEditingAppointment] = useState(null);
+  const [appointmentPrefill, setAppointmentPrefill] = useState(null);
+  const [appointmentReturnScreen, setAppointmentReturnScreen] = useState("schedule");
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   useEffect(() => {
@@ -118,9 +136,43 @@ export default function App() {
               navigate={navigate}
               onEditAppointment={(appt) => {
                 setEditingAppointment(appt);
+                setAppointmentPrefill(null);
+                setAppointmentReturnScreen("schedule");
+                navigate("add-appointment");
+              }}
+              onAddAppointment={() => {
+                setEditingAppointment(null);
+                setAppointmentPrefill(null);
+                setAppointmentReturnScreen("schedule");
                 navigate("add-appointment");
               }}
             />
+          )}
+        </RequireAuth>
+      )}
+
+      {screen === "calendar" && (
+        <RequireAuth session={session} isPending={isPending}>
+          {() => (
+            <CalendarErrorBoundary>
+              <Suspense fallback={<CalendarLoading />}>
+                <CalendarScreen
+                  navigate={navigate}
+                  onEditAppointment={(appt) => {
+                    setEditingAppointment(appt);
+                    setAppointmentPrefill(null);
+                    setAppointmentReturnScreen("calendar");
+                    navigate("add-appointment");
+                  }}
+                  onAddAppointment={(prefill) => {
+                    setEditingAppointment(null);
+                    setAppointmentPrefill(prefill);
+                    setAppointmentReturnScreen("calendar");
+                    navigate("add-appointment");
+                  }}
+                />
+              </Suspense>
+            </CalendarErrorBoundary>
           )}
         </RequireAuth>
       )}
@@ -131,7 +183,12 @@ export default function App() {
             <AddAppointmentScreen
               navigate={navigate}
               editingAppointment={editingAppointment}
-              onClearEdit={() => setEditingAppointment(null)}
+              prefillDefaults={appointmentPrefill}
+              returnScreen={appointmentReturnScreen}
+              onClearEdit={() => {
+                setEditingAppointment(null);
+                setAppointmentPrefill(null);
+              }}
             />
           )}
         </RequireAuth>

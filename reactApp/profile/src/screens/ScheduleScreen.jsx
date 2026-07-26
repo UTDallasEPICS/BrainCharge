@@ -13,7 +13,7 @@ function CalendarIcon() {
   );
 }
 
-export default function ScheduleScreen({ navigate, onEditAppointment }) {
+export default function ScheduleScreen({ navigate, onEditAppointment, onAddAppointment }) {
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -35,6 +35,12 @@ export default function ScheduleScreen({ navigate, onEditAppointment }) {
 
   useEffect(() => {
     loadAppointments();
+  }, [loadAppointments]);
+
+  useEffect(() => {
+    const handleUpdate = () => loadAppointments();
+    window.addEventListener("calendar-updated", handleUpdate);
+    return () => window.removeEventListener("calendar-updated", handleUpdate);
   }, [loadAppointments]);
 
   const deleteAppt = async (id) => {
@@ -68,7 +74,7 @@ export default function ScheduleScreen({ navigate, onEditAppointment }) {
       </div>
 
       <div className="sched-body">
-        <button className="add-appt-btn" onClick={() => navigate("add-appointment")}>
+        <button className="add-appt-btn" onClick={() => onAddAppointment?.() ?? navigate("add-appointment")}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5">
             <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
           </svg>

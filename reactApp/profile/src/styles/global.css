@@ -32,13 +32,14 @@ body {
 }
 
 .app-shell {
-  width: 375px;
+  width: 100%;
+  max-width: 375px;
   min-height: 100vh;
   background: var(--bg);
   display: flex;
   flex-direction: column;
   position: relative;
-  overflow: hidden;
+  overflow-x: hidden;
 }
 
 .auth-loading {

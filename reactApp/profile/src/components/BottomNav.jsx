@@ -26,6 +26,21 @@ const navItems = [
     ),
   },
   {
+    id: "calendar",
+    label: "Calendar",
+    icon: (active) => (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+        stroke={active ? "#2596BE" : "#7a9aaa"} strokeWidth="1.8">
+        <rect x="3" y="4" width="18" height="18" rx="2"/>
+        <line x1="16" y1="2" x2="16" y2="6"/>
+        <line x1="8" y1="2" x2="8" y2="6"/>
+        <line x1="3" y1="10" x2="21" y2="10"/>
+        <rect x="7" y="14" width="3" height="3" rx="0.5" fill={active ? "#2596BE" : "#7a9aaa"} stroke="none"/>
+        <rect x="12" y="14" width="3" height="3" rx="0.5" fill={active ? "#2596BE" : "#7a9aaa"} stroke="none"/>
+      </svg>
+    ),
+  },
+  {
     id: "connect",
     label: "Connect",
     icon: (active) => (

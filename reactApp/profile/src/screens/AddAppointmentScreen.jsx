@@ -2,7 +2,13 @@ import { useState, useEffect } from "react";
 import { createEvent, updateEvent, time12hTo24h } from "../api/calendar";
 import "../styles/addappointment.css";
 
-export default function AddAppointmentScreen({ navigate, editingAppointment, onClearEdit }) {
+export default function AddAppointmentScreen({
+  navigate,
+  editingAppointment,
+  prefillDefaults,
+  returnScreen = "schedule",
+  onClearEdit,
+}) {
   const [reminder, setReminder] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -16,15 +22,25 @@ export default function AddAppointmentScreen({ navigate, editingAppointment, onC
   const isEditing = Boolean(editingAppointment?.id);
 
   useEffect(() => {
-    if (!editingAppointment) return;
+    if (editingAppointment) {
+      setForm({
+        title: editingAppointment.title || "",
+        date: editingAppointment.date || "",
+        time: time12hTo24h(editingAppointment.time) || "12:00",
+        notes: editingAppointment.note || "",
+      });
+      return;
+    }
 
-    setForm({
-      title: editingAppointment.title || "",
-      date: editingAppointment.date || "",
-      time: time12hTo24h(editingAppointment.time) || "12:00",
-      notes: editingAppointment.note || "",
-    });
-  }, [editingAppointment]);
+    if (prefillDefaults) {
+      setForm({
+        title: prefillDefaults.title || "",
+        date: prefillDefaults.date || "",
+        time: prefillDefaults.time || "12:00",
+        notes: prefillDefaults.notes || "",
+      });
+    }
+  }, [editingAppointment, prefillDefaults]);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -32,7 +48,7 @@ export default function AddAppointmentScreen({ navigate, editingAppointment, onC
 
   const goBack = () => {
     onClearEdit?.();
-    navigate("schedule");
+    navigate(returnScreen);
   };
 
   const handleSubmit = async () => {
@@ -57,7 +73,7 @@ export default function AddAppointmentScreen({ navigate, editingAppointment, onC
 
       window.dispatchEvent(new Event("calendar-updated"));
       onClearEdit?.();
-      navigate("schedule");
+      navigate(returnScreen);
     } catch (err) {
       setError(err.message);
     } finally {
