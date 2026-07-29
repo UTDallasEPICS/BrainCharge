@@ -37,27 +37,31 @@ export default function App() {
   const [editingAppointment, setEditingAppointment] = useState(null);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-{/*Dark mode state management - AnahiF  */}
+{/*Dark mode & font size state management - AnahiF  */}
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [fontSize, setFontSize] = useState("medium");
 
   useEffect(() => {
-    const syncTheme = () => {
+    const syncSettings = () => {
       try {
         const storedSettings = JSON.parse(localStorage.getItem("app_settings") || "{}");
         setIsDarkMode(Boolean(storedSettings.darkMode));
+        const size = storedSettings.fontSize;
+        setFontSize(size === "small" || size === "large" ? size : "medium");
       } catch {
         setIsDarkMode(false);
+        setFontSize("medium");
       }
     };
 
-    syncTheme();
-    window.addEventListener("settings-updated", syncTheme);
+    syncSettings();
+    window.addEventListener("settings-updated", syncSettings);
 
     return () => {
-      window.removeEventListener("settings-updated", syncTheme);
+      window.removeEventListener("settings-updated", syncSettings);
     };
   }, []);
-{/*End of dark mode state management - AnahiF  */}
+{/*End of dark mode & font size state management - AnahiF  */}
   useEffect(() => {
     if (isPending || isLoggingOut) return;
 
@@ -107,9 +111,9 @@ export default function App() {
     return <AuthLoading />;
   }
 
-  {/* app-shell className will include "dark" if isDarkMode is true, allowing for dark mode styling - AnahiF*/}
+  {/* app-shell className includes theme + font-size classes from settings - AnahiF*/}
   return (
-    <div className={`app-shell ${isDarkMode ? "dark" : ""}`}> 
+    <div className={`app-shell ${isDarkMode ? "dark" : ""} font-size-${fontSize}`}> 
       {screen === "splash" && <SplashScreen navigate={navigate} />}
       {screen === "make-account" && <MakeAccount navigate={navigate} />}
       {screen === "sign-in" && <SignIn navigate={navigate} />}

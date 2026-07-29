@@ -25,7 +25,7 @@
 }
 
 .splash-title {
-  font-size: 30px;
+  font-size: calc(30px * var(--font-scale));
   font-weight: 700;
   color: var(--text-primary);
   margin-bottom: 8px;
@@ -33,7 +33,7 @@
 }
 
 .splash-subtitle {
-  font-size: 15px;
+  font-size: calc(15px * var(--font-scale));
   color: var(--text-muted);
   margin-bottom: 64px;
 }
@@ -52,7 +52,7 @@
   color: #fff;
   border: none;
   border-radius: 50px;
-  font-size: 16px;
+  font-size: calc(16px * var(--font-scale));
   font-weight: 500;
   cursor: pointer;
   transition: background 0.15s;
@@ -69,7 +69,7 @@
   color: var(--text-primary);
   border: 1.5px solid var(--teal);
   border-radius: 50px;
-  font-size: 16px;
+  font-size: calc(16px * var(--font-scale));
   font-weight: 500;
   cursor: pointer;
   transition: background 0.15s;

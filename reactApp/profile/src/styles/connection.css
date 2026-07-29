@@ -62,7 +62,7 @@
 
 .status-subtext {
   color: var(--text-muted);
-  font-size: 0.9rem;
+  font-size: calc(0.9rem * var(--font-scale));
   max-width: 280px;
 }
 
@@ -75,7 +75,7 @@
   border: none;
   border-radius: 16px;
   font-weight: 700;
-  font-size: 1.1rem;
+  font-size: calc(1.1rem * var(--font-scale));
   cursor: pointer;
   transition: all 0.3s ease;
 }
@@ -116,7 +116,7 @@
 
 .conn-help h3 {
   color: var(--text-primary);
-  font-size: 1rem;
+  font-size: calc(1rem * var(--font-scale));
   margin-bottom: 12px;
 }
 
@@ -127,5 +127,5 @@
 
 .conn-help li {
   margin-bottom: 10px;
-  font-size: 0.9rem;
+  font-size: calc(0.9rem * var(--font-scale));
 }

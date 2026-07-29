@@ -10,13 +10,13 @@
   padding: 52px 20px 16px;
 }
 .rem-header h1 {
-  font-size: 26px;
+  font-size: calc(26px * var(--font-scale));
   font-weight: 700;
   color: var(--text-primary);
   letter-spacing: -0.3px;
 }
 .rem-header p {
-  font-size: 14px;
+  font-size: calc(14px * var(--font-scale));
   color: var(--text-muted);
   margin-top: 4px;
 }
@@ -30,7 +30,7 @@
   color: #fff;
   border: none;
   border-radius: 14px;
-  font-size: 15px;
+  font-size: calc(15px * var(--font-scale));
   font-weight: 500;
   cursor: pointer;
   margin-bottom: 20px;
@@ -42,7 +42,7 @@
 }
 .add-rem-btn:hover { background: var(--teal-dark); }
 .section-title {
-  font-size: 17px;
+  font-size: calc(17px * var(--font-scale));
   font-weight: 700;
   color: var(--text-primary);
   margin-bottom: 12px;
@@ -69,17 +69,17 @@
 }
 .rem-info { flex: 1; }
 .rem-title {
-  font-size: 15px;
+  font-size: calc(15px * var(--font-scale));
   font-weight: 600;
   color: var(--text-primary);
   margin-bottom: 2px;
 }
 .rem-meta {
-  font-size: 12px;
+  font-size: calc(12px * var(--font-scale));
   color: var(--text-muted);
 }
 .rem-tag {
-  font-size: 11px;
+  font-size: calc(11px * var(--font-scale));
   padding: 3px 8px;
   border-radius: 20px;
   font-weight: 500;
@@ -99,6 +99,6 @@
 .empty-state {
   text-align: center;
   color: var(--text-muted);
-  font-size: 14px;
+  font-size: calc(14px * var(--font-scale));
   padding: 40px 20px;
 }

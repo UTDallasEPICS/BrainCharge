@@ -21,13 +21,13 @@
 }
 
 .connected-to {
-  font-size: 12px;
+  font-size: calc(12px * var(--font-scale));
   opacity: 0.85;
   margin-bottom: 4px;
 }
 
 .home-header h1 {
-  font-size: 22px;
+  font-size: calc(22px * var(--font-scale));
   font-weight: 700;
   letter-spacing: -0.3px;
 }
@@ -54,7 +54,7 @@
   background: rgba(255, 255, 255, 0.25);
   border-radius: 20px;
   padding: 5px 12px;
-  font-size: 13px;
+  font-size: calc(13px * var(--font-scale));
   color: #fff;
 }
 
@@ -74,19 +74,19 @@
 }
 
 .companion-cta-label {
-  font-size: 12px;
+  font-size: calc(12px * var(--font-scale));
   color: var(--text-muted);
   margin-bottom: 4px;
 }
 
 .companion-cta-title {
-  font-size: 17px;
+  font-size: calc(17px * var(--font-scale));
   font-weight: 600;
   color: var(--text-primary);
 }
 
 .section-title {
-  font-size: 17px;
+  font-size: calc(17px * var(--font-scale));
   font-weight: 700;
   color: var(--text-primary);
   margin-bottom: 12px;
@@ -118,25 +118,25 @@
 .card-icon.amber { background: var(--amber-bg); }
 
 .card-text .card-title {
-  font-size: 15px;
+  font-size: calc(15px * var(--font-scale));
   font-weight: 600;
   color: var(--text-primary);
   margin-bottom: 2px;
 }
 
 .card-text .card-sub {
-  font-size: 13px;
+  font-size: calc(13px * var(--font-scale));
   color: var(--text-muted);
   margin-bottom: 2px;
 }
 
 .card-text .card-alert {
-  font-size: 13px;
+  font-size: calc(13px * var(--font-scale));
   color: var(--alert);
 }
 
 .card-text .card-tip {
-  font-size: 12px;
+  font-size: calc(12px * var(--font-scale));
   color: var(--text-muted);
   line-height: 1.55;
 }
@@ -147,7 +147,7 @@
   background: rgba(255, 255, 255, 0.25);
   border: none;
   cursor: pointer;
-  font-size: 13px;
+  font-size: calc(13px * var(--font-scale));
   font-family: inherit;
   color: #fff;
   transition: background 0.15s;
@@ -167,7 +167,7 @@
 
 /* Overflow count badge ("+2 more") — also a button */
 .overflow-badge {
-  font-size: 12px;
+  font-size: calc(12px * var(--font-scale));
   font-weight: 600;
   color: var(--teal);
   background: var(--blue-bg, #e8f4fb);
@@ -255,7 +255,7 @@
 }
 
 .rab-label {
-  font-size: 14px;
+  font-size: calc(14px * var(--font-scale));
   font-weight: 600;
   color: var(--teal);
 }
@@ -274,7 +274,7 @@
   /* Sizing & Shape */
   padding: 8px 14px;
   border-radius: 10px;
-  font-size: 0.85rem;
+  font-size: calc(0.85rem * var(--font-scale));
   font-weight: 700;
   
   /* Layout */
@@ -304,5 +304,5 @@
   border-radius: 12px;
   padding: 10px 12px;
   margin-bottom: 12px;
-  font-size: 13px;
+  font-size: calc(13px * var(--font-scale));
 }

@@ -18,7 +18,7 @@
 
 .add-header p {
   color: #7a9aaa;
-  font-size: 0.95rem;
+  font-size: calc(0.95rem * var(--font-scale));
 }
 
 .form-group {
@@ -30,7 +30,7 @@
   color: black;
   font-weight: 600;
   margin-bottom: 8px;
-  font-size: 0.9rem;
+  font-size: calc(0.9rem * var(--font-scale));
 }
 
 .form-input, .form-textarea {
@@ -40,7 +40,7 @@
   border-radius: 12px;
   padding: 14px 16px;
   color: #000000;
-  font-size: 1rem;
+  font-size: calc(1rem * var(--font-scale));
   box-sizing: border-box;
   outline: none;
 }
@@ -76,7 +76,7 @@
 
 .toggle-label {
   color: black;
-  font-size: 0.95rem;
+  font-size: calc(0.95rem * var(--font-scale));
 }
 
 .submit-btn {
@@ -87,7 +87,7 @@
   border: none;
   border-radius: 16px;
   font-weight: 700;
-  font-size: 1.1rem;
+  font-size: calc(1.1rem * var(--font-scale));
   cursor: pointer;
   box-shadow: 0 4px 15px rgba(29, 158, 117, 0.3);
 }
@@ -104,5 +104,5 @@
   border-radius: 10px;
   padding: 10px 12px;
   margin-bottom: 16px;
-  font-size: 14px;
+  font-size: calc(14px * var(--font-scale));
 }

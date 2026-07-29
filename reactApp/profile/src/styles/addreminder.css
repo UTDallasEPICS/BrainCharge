@@ -15,15 +15,15 @@
   transition: background 0.15s;
 }
 .back-btn:hover { background: var(--bg); }
-.arh h1 { font-size: 26px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.3px; }
-.arh p { font-size: 14px; color: var(--text-muted); margin-top: 4px; }
+.arh h1 { font-size: calc(26px * var(--font-scale)); font-weight: 700; color: var(--text-primary); letter-spacing: -0.3px; }
+.arh p { font-size: calc(14px * var(--font-scale)); color: var(--text-muted); margin-top: 4px; }
 .ar-body { padding: 8px 20px 20px; }
 .form-group { margin-bottom: 18px; }
-.form-label { display: block; font-size: 13px; font-weight: 500; color: var(--text-primary); margin-bottom: 7px; }
+.form-label { display: block; font-size: calc(13px * var(--font-scale)); font-weight: 500; color: var(--text-primary); margin-bottom: 7px; }
 .form-input {
   width: 100%; padding: 13px 14px;
   border: 1px solid var(--border); border-radius: 12px;
-  font-size: 15px; color: var(--text-primary);
+  font-size: calc(15px * var(--font-scale)); color: var(--text-primary);
   background: #fff; outline: none; font-family: inherit;
   transition: border-color 0.15s;
 }
@@ -33,7 +33,7 @@
 .freq-chip {
   padding: 8px 14px; border-radius: 20px;
   border: 1px solid var(--border); background: #fff;
-  font-size: 13px; color: var(--text-primary);
+  font-size: calc(13px * var(--font-scale)); color: var(--text-primary);
   cursor: pointer; font-family: inherit; transition: all 0.15s;
 }
 .freq-chip.sel { background: var(--teal); color: #fff; border-color: var(--teal); }
@@ -41,7 +41,7 @@
   display: flex; align-items: center; justify-content: space-between;
   padding: 16px 0; border-top: 0.5px solid var(--border);
 }
-.toggle-label { font-size: 15px; font-weight: 500; color: var(--text-primary); }
+.toggle-label { font-size: calc(15px * var(--font-scale)); font-weight: 500; color: var(--text-primary); }
 .toggle-switch {
   width: 52px; height: 30px; border-radius: 15px;
   border: none; cursor: pointer; position: relative; padding: 0;
@@ -60,7 +60,7 @@
   width: 100%; margin-top: 24px; padding: 16px;
   background: var(--teal); color: #fff;
   border: none; border-radius: 14px;
-  font-size: 16px; font-weight: 500; cursor: pointer;
+  font-size: calc(16px * var(--font-scale)); font-weight: 500; cursor: pointer;
   transition: background 0.15s;
 }
 .submit-btn:hover { background: var(--teal-dark); }
@@ -83,7 +83,7 @@
   border: 1px solid rgba(255, 255, 255, 0.2);
   background: transparent;
   color: darkgray;
-  font-size: 0.8rem;
+  font-size: calc(0.8rem * var(--font-scale));
   font-weight: bold;
   cursor: pointer;
   display: flex;
@@ -103,7 +103,7 @@
   appearance: none;
   background: #f4f7f8;
   color: #1a2a32;
-  font-size: 1.2rem;
+  font-size: calc(1.2rem * var(--font-scale));
   font-weight: bold;
   text-align: center;
   padding: 12px;

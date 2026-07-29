@@ -30,7 +30,7 @@
   border-radius: 999px;
   background: #e05252;
   color: #fff;
-  font-size: 11px;
+  font-size: calc(11px * var(--font-scale));
   font-weight: 700;
   display: flex;
   align-items: center;
@@ -59,7 +59,7 @@
 }
 
 .notification-panel-header h2 {
-  font-size: 17px;
+  font-size: calc(17px * var(--font-scale));
   font-weight: 700;
   color: var(--text-primary);
 }
@@ -68,7 +68,7 @@
   border: none;
   background: none;
   color: var(--teal);
-  font-size: 13px;
+  font-size: calc(13px * var(--font-scale));
   font-weight: 600;
   cursor: pointer;
 }
@@ -78,7 +78,7 @@
 }
 
 .notification-group-label {
-  font-size: 12px;
+  font-size: calc(12px * var(--font-scale));
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -123,13 +123,13 @@
 }
 
 .notification-item-title {
-  font-size: 14px;
+  font-size: calc(14px * var(--font-scale));
   font-weight: 600;
   color: var(--text-primary);
 }
 
 .notification-item-sub {
-  font-size: 12px;
+  font-size: calc(12px * var(--font-scale));
   color: var(--text-muted);
 }
 
@@ -142,13 +142,13 @@
 }
 
 .notification-item-time {
-  font-size: 12px;
+  font-size: calc(12px * var(--font-scale));
   font-weight: 600;
   color: var(--text-primary);
 }
 
 .notification-item-label {
-  font-size: 11px;
+  font-size: calc(11px * var(--font-scale));
   color: var(--teal-dark);
   font-weight: 600;
 }
@@ -156,7 +156,7 @@
 .notification-empty,
 .notification-disabled,
 .notification-error {
-  font-size: 13px;
+  font-size: calc(13px * var(--font-scale));
   color: var(--text-muted);
   padding: 8px 2px 4px;
 }
@@ -186,13 +186,13 @@
 }
 
 .notification-toast-title {
-  font-size: 14px;
+  font-size: calc(14px * var(--font-scale));
   font-weight: 700;
   margin-bottom: 2px;
 }
 
 .notification-toast-message {
-  font-size: 12px;
+  font-size: calc(12px * var(--font-scale));
   opacity: 0.85;
 }
 
@@ -200,7 +200,7 @@
   border: none;
   background: none;
   color: #fff;
-  font-size: 20px;
+  font-size: calc(20px * var(--font-scale));
   line-height: 1;
   cursor: pointer;
   padding: 0;

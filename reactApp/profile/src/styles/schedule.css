@@ -15,14 +15,14 @@
 }
 
 .sched-header h1 {
-  font-size: 26px;
+  font-size: calc(26px * var(--font-scale));
   font-weight: 700;
   color: var(--text-primary);
   letter-spacing: -0.3px;
 }
 
 .sched-header p {
-  font-size: 14px;
+  font-size: calc(14px * var(--font-scale));
   color: var(--text-muted);
   margin-top: 4px;
 }
@@ -38,7 +38,7 @@
   color: #fff;
   border: none;
   border-radius: 14px;
-  font-size: 15px;
+  font-size: calc(15px * var(--font-scale));
   font-weight: 500;
   cursor: pointer;
   margin-bottom: 20px;
@@ -54,7 +54,7 @@
 }
 
 .section-title {
-  font-size: 17px;
+  font-size: calc(17px * var(--font-scale));
   font-weight: 700;
   color: var(--text-primary);
   margin-bottom: 12px;
@@ -88,7 +88,7 @@
 }
 
 .appt-title {
-  font-size: 15px;
+  font-size: calc(15px * var(--font-scale));
   font-weight: 600;
   color: var(--text-primary);
   margin-bottom: 4px;
@@ -98,7 +98,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  font-size: 12px;
+  font-size: calc(12px * var(--font-scale));
   color: var(--text-muted);
   margin-bottom: 2px;
 }
@@ -110,7 +110,7 @@
 }
 
 .appt-note {
-  font-size: 12px;
+  font-size: calc(12px * var(--font-scale));
   color: var(--text-muted);
 }
 
@@ -133,7 +133,7 @@
   border: none;
   border-radius: 20px;
   padding: 7px 14px;
-  font-size: 13px;
+  font-size: calc(13px * var(--font-scale));
   font-weight: 500;
   cursor: pointer;
   transition: background 0.15s;
@@ -175,7 +175,7 @@
   padding: 28px 16px;
   text-align: center;
   color: var(--text-muted);
-  font-size: 14px;
+  font-size: calc(14px * var(--font-scale));
 }
 
 /* ── Modals (shared) ── */
@@ -200,14 +200,14 @@
 }
 
 .modal-title-sched {
-  font-size: 18px;
+  font-size: calc(18px * var(--font-scale));
   font-weight: 700;
   color: var(--text-primary);
   margin-bottom: 16px;
 }
 
 .modal-body-sched {
-  font-size: 14px;
+  font-size: calc(14px * var(--font-scale));
   color: var(--text-muted);
   margin-bottom: 20px;
   line-height: 1.5;
@@ -218,7 +218,7 @@
 }
 
 .modal-field-label {
-  font-size: 12px;
+  font-size: calc(12px * var(--font-scale));
   font-weight: 600;
   color: var(--text-muted);
   text-transform: uppercase;
@@ -232,7 +232,7 @@
   padding: 11px 12px;
   border: 0.5px solid var(--border);
   border-radius: 10px;
-  font-size: 15px;
+  font-size: calc(15px * var(--font-scale));
   color: var(--text-primary);
   background: var(--bg);
   outline: none;
@@ -255,7 +255,7 @@
   border: 0.5px solid var(--border);
   border-radius: 12px;
   background: var(--bg);
-  font-size: 15px;
+  font-size: calc(15px * var(--font-scale));
   font-weight: 500;
   cursor: pointer;
   color: var(--text-primary);
@@ -268,7 +268,7 @@
   border-radius: 12px;
   background: #e05252;
   color: #fff;
-  font-size: 15px;
+  font-size: calc(15px * var(--font-scale));
   font-weight: 600;
   cursor: pointer;
   transition: background 0.15s;
@@ -284,7 +284,7 @@
   border-radius: 12px;
   background: var(--teal);
   color: #fff;
-  font-size: 15px;
+  font-size: calc(15px * var(--font-scale));
   font-weight: 600;
   cursor: pointer;
   transition: background 0.15s;
@@ -326,7 +326,7 @@
   padding: 12px 14px;
   margin-bottom: 16px;
   color: #b42318;
-  font-size: 14px;
+  font-size: calc(14px * var(--font-scale));
 }
 
 .calendar-error p {
@@ -339,6 +339,6 @@
   color: #b42318;
   border-radius: 8px;
   padding: 6px 12px;
-  font-size: 13px;
+  font-size: calc(13px * var(--font-scale));
   cursor: pointer;
 }

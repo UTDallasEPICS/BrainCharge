@@ -20,6 +20,7 @@
   --green-icon: #1d9e75;
   --amber-bg: #faeeda;
   --amber-icon: #ba7517;
+  --font-scale: 1;
 }
 
 /* Dark mode variables - Anahi Fuentes*/
@@ -60,11 +61,25 @@ body {
   flex-direction: column;
   position: relative;
   overflow: hidden;
+  --font-scale: 1;
+}
+
+/* Font size setting — scales text throughout the app */
+.app-shell.font-size-small {
+  --font-scale: 0.875;
+}
+
+.app-shell.font-size-medium {
+  --font-scale: 1;
+}
+
+.app-shell.font-size-large {
+  --font-scale: 1.1875;
 }
 
 .auth-loading {
   align-items: center;
   justify-content: center;
   color: var(--text-muted);
-  font-size: 15px;
+  font-size: calc(15px * var(--font-scale));
 }
