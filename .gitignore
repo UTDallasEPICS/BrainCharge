@@ -10,9 +10,19 @@ __pycache__/
 env/
 venv/
 ENV/
+.venv/
 *.egg-info/
 dist/
 build/
+
+# Local database
+data/*.db
+
+# PyCharm index
+identifier.sqlite
+
+# Generated visual test output from cv model
+cv/picturefile/
 
 # Local environment config
 .env
