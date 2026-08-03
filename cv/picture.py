@@ -306,12 +306,14 @@ class CVPipeline:
                 ]
                     
                 cv2.rectangle(image, (x1, y1), (x2, y2), (0, 0, 255), 2)
-                cv2.putText(
-                    image, 
-                    ", ".join(e["emotion"] for e in emotions), 
-                    (10, 50), 
-                    cv2.FONT_HERSHEY_SIMPLEX, 1.5, (255, 0, 0), 5
-                )
+                for i, e in enumerate(emotions):
+                    label = f"{e['emotion']}: {e['confidence']:.2f}"
+                    cv2.putText(
+                        image,
+                        label,
+                        (10, 50 + i * 45),
+                        cv2.FONT_HERSHEY_SIMPLEX, 1.2, (255, 0, 0), 3
+                    )
                 image_path = DIRECTORY_PATH / "analyzed_image.jpg"
                 image_saved = cv2.imwrite(str(image_path), image)
                 if not image_saved:
