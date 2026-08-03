@@ -1,4 +1,6 @@
 from collections import Counter
+from memory.memory_manager import get_recent_sessions
+
 
 def record_session(sessions_readings, emotion_labels, confidence, modality):
     sessions_readings.append({
@@ -6,6 +8,23 @@ def record_session(sessions_readings, emotion_labels, confidence, modality):
         "confidence": confidence,
         "modality": modality,
     })
+
+def sessions_to_readings(saved_sessions):
+    readings = []
+    for session in saved_sessions:
+        timestamp, transcript, vision_emotion, vision_confidence, text_emotion, text_confidence, voice_emotion, voice_confidence = session
+        if vision_emotion is not None:
+            readings.append({"emotion": vision_emotion, "confidence": vision_confidence, "modality": "vision"})
+        if text_emotion is not None:
+            readings.append({"emotion": text_emotion, "confidence": text_confidence, "modality": "text"})
+        if voice_emotion is not None:
+            readings.append({"emotion": voice_emotion, "confidence": voice_confidence, "modality": "voice"})
+    return readings
+
+def summarize_recent_sessions(person_id, limit = 10):
+    sessions = get_recent_sessions(person_id, limit)
+    sessions = sessions_to_readings(sessions)
+    return summarize_session(sessions)
 
 def summarize_modality(sessions_readings, modality):
     readings = [r for r in sessions_readings if r["modality"] == modality]
