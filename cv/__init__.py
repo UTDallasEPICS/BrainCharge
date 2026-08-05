@@ -1,1 +1,1 @@
-from picture import CVPipeline
+from .picture import CVPipeline

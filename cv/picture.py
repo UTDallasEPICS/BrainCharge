@@ -5,22 +5,24 @@ from cv2.typing import MatLike
 from pathlib import Path
 from torch import device, cuda
 import time
-from hsemotion_detector import EmotionDetector
+from .hsemotion_detector import EmotionDetector
 import numpy as np
+import os
 
 # FEATURE FLAG (Sort of)
 CONNECT_ARDUINO_FLAG: bool = False
 
 # GLOBAL
 DEVICE: device = "cuda" if cuda.is_available() else "cpu"
-PERSON_DETECTOR_FILEPATH = "yolov8n.pt"
-FACE_DETECTOR_FILEPATH = "./yolov8n-face-lindevs.pt"
+CV_DIR = os.path.dirname(os.path.abspath(__file__))
+PERSON_DETECTOR_FILEPATH = os.path.join(CV_DIR, "yolov8n.pt")
+FACE_DETECTOR_FILEPATH = os.path.join(CV_DIR, "./yolov8n-face-lindevs.pt")
 EMOTION_CLASSIFIER_FILEPATH = "./hsemotion_detector.py"
 NUM_TOP_EMOTIONS = 3
 
 # Check and create if needed the file needed for the file
 try:
-    DIRECTORY_NAME = "./picturefile"
+    DIRECTORY_NAME = os.path.join(CV_DIR, "./picturefile")
     DIRECTORY_PATH = Path(DIRECTORY_NAME)
 
     DIRECTORY_PATH.mkdir(parents=True, exist_ok=True)
@@ -273,17 +275,20 @@ class CVPipeline:
 
         # Take the picture of the user with the opened camera
         if not self.camera: 
-            return emotions
+            return emotions, None
         success, image = self.camera.read()
         if not success: 
-            return emotions
+            return emotions, None
 
+        #face_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        face_rgb = None
         try: 
             # The face detector captures only one image at the time
             analysis = self.face_detector(image)[0].boxes
             boxes = analysis.xyxy.cpu().numpy()
 
-            if boxes is not None:
+            #if boxes is not None:
+            if len(boxes) > 0:
                 # The face the YOLO is most confident, which is often the closest face
                 h, w, _ = image.shape
                 x1, y1, x2, y2 = map(int, boxes[0])
@@ -321,6 +326,7 @@ class CVPipeline:
 
                 print(f"Final analyzed image saved to: {image_path}")
             else:
+                face_rgb = None
                 cv2.putText(
                     image, 
                     "No emotions determined", 
@@ -328,6 +334,7 @@ class CVPipeline:
                     cv2.FONT_HERSHEY_SIMPLEX, 1.5, (255, 0, 0), 5
                 )
         except Exception as e:
+            face_rgb = None
             import traceback
             traceback.print_exc()
             cv2.putText(
@@ -337,7 +344,7 @@ class CVPipeline:
                 cv2.FONT_HERSHEY_SIMPLEX, 1.5, (255, 0, 0), 5
             )
 
-        return emotions
+        return emotions, face_rgb
 
 
 if __name__ == "__main__": 
@@ -347,7 +354,8 @@ if __name__ == "__main__":
 
     cv_pipeline.turn_on_camera()
     # will take a picture and give the top three emotions detected by confidence
-    emotions = cv_pipeline.execute()
+    emotions, face_rgb = cv_pipeline.execute()
     print(emotions)
+    print(face_rgb)
     #cv_pipeline.track_movement()
     cv_pipeline.turn_off_camera()
