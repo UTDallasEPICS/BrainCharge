@@ -1,7 +1,7 @@
 import json
 import subprocess
 
-OLLAMA_MODEL = "gemma3:4b"
+OLLAMA_MODEL = "gemma3:1b"
 
 EMOTION_LABELS = [
     "Happy", "Sad", "Angry", "Anxious", "Overwhelmed",
@@ -27,7 +27,7 @@ def detect_text_emotion(transcript):
 
     try:
         result = subprocess.run(
-            ["ollama", "run", OLLAMA_MODEL, prompt], capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=30
+            ["ollama", "run", OLLAMA_MODEL, prompt], capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=90
         )
         summary_text = result.stdout.strip()
         if "```json" in summary_text:

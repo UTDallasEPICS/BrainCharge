@@ -8,7 +8,7 @@ import struct
 import math
 from datetime import datetime
 from cv.picture import CVPipeline
-from face_identity_embedding.face_identity import find_or_enroll_person
+from face_identity_embedding.face_identity import find_or_enroll_person, get_person_name, set_person_name
 from voice_text_emotion.voice_emotion import detect_voice_emotion
 from voice_text_emotion.text_emotion import detect_text_emotion
 from memory.memory_manager import save_session
@@ -46,6 +46,11 @@ elif system == "Darwin":
     WHISPER_PATH = config.get("whisper_path_mac", config.get("whisper_path", "whisper.cpp/build/bin/whisper-cli"))
 else:
     WHISPER_PATH = config.get("whisper_path_linux", config.get("whisper_path", "whisper.cpp/build/bin/whisper-cli"))
+
+# subprocess/CreateProcess on Windows resolves a relative executable path
+# differently than normal file access (os.path.exists can find it, but
+# subprocess.run can't launch it) -- make it absolute to avoid that.
+WHISPER_PATH = os.path.abspath(WHISPER_PATH)
 
 WHISPER_MODEL = config["whisper_model"]
 PIPER_MODEL = config.get("piper_model", "")
@@ -340,8 +345,8 @@ class ConversationContext:
         
         try:
             result = subprocess.run(
-                ["ollama", "run", "gemma3:4b", summary_prompt],
-                capture_output=True, text=True, timeout=60
+                ["ollama", "run", "gemma3:1b", summary_prompt],
+                capture_output=True, text=True, timeout=90
             )
             summary_text = result.stdout.strip()
             
@@ -435,7 +440,34 @@ def transcribe_audio(audio_file):
         return ""
 
 
-def generate_response(user_input, context):
+def extract_name(transcript):
+    """Pulls just a person's name out of a free-form reply like 'My name is Alice'.
+    Returns the name as a string, or None if nothing usable could be extracted."""
+    prompt = (
+        "Extract just the person's first name from the following statement. "
+        "Respond with ONLY the name itself, capitalized, nothing else -- no punctuation, "
+        "no extra words. If no name is stated, respond with exactly: NONE\n\n"
+        f"Statement: {transcript}"
+    )
+    try:
+        result = subprocess.run(
+            ["ollama", "run", "gemma3:1b", prompt],
+            capture_output=True, text=True,
+            encoding="utf-8", errors="replace", timeout=90
+        )
+        name = result.stdout.strip()
+        if not name or name.upper() == "NONE":
+            return None
+        return name
+    except subprocess.TimeoutExpired:
+        print("Name extraction timed out")
+        return None
+    except Exception as e:
+        print(f"Error extracting name: {e}")
+        return None
+
+
+def generate_response(user_input, context,vision_emotion=None, vision_confidence=None, text_emotion=None, text_confidence=None, text_description=None, voice_emotion=None, voice_confidence=None):
     """Generate response using Ollama with context"""
     prompt_instruction = (
         "You are the Caregiver Compassion Bot, a gentle, empathetic robotic companion "
@@ -448,13 +480,32 @@ def generate_response(user_input, context):
     )
     
     context_prompt = context.get_context_prompt()
-    full_prompt = prompt_instruction + context_prompt + f"\n\nUser: {user_input}\n\nAssistant:"
+
+    emotion_context = ""
+    if vision_emotion is not None:
+        emotion_context += f"Their face showed {vision_emotion} ({vision_confidence:.2f} confidence). "
+    if voice_emotion is not None:
+        emotion_context += f"Their voice sounded {voice_emotion} ({voice_confidence:.2f} confidence). "
+    if text_emotion is not None:
+        emotion_context += f"Their words suggested {text_emotion}"
+        if text_description:
+            emotion_context += f" -- {text_description}"
+        emotion_context += ". "
+
+    if emotion_context:
+        emotion_context = (
+            "\n\nContext on how the user seems to be feeling right now: "
+            + emotion_context +
+            "Let this inform the warmth and tone of your reply, without explicitly listing these back to the user."
+        )
+
+    full_prompt = prompt_instruction + context_prompt + emotion_context + f"\n\nUser: {user_input}\n\nAssistant:"
     
     try:
         result = subprocess.run(
-            ["ollama", "run", "gemma3:4b", full_prompt],
+            ["ollama", "run", "gemma3:1b", full_prompt],
             capture_output=True, text=True,
-            encoding="utf-8", errors="replace", timeout=30
+            encoding="utf-8", errors="replace", timeout=90
         )
         return result.stdout.strip()
     except subprocess.TimeoutExpired:
@@ -488,11 +539,26 @@ def continuous_conversation(context, cv_pipeline):
     speak_response("Yes, I'm here. How can I help you?")
     cv_pipeline.turn_on_camera()
     emotions, face_rgb = cv_pipeline.execute()
-    person_id = find_or_enroll_person(face_rgb) if face_rgb is not None else None
 
-    
+    person_id = None
+    person_name = None
+    if face_rgb is not None:
+        person_id, is_new_person = find_or_enroll_person(face_rgb)
+        if is_new_person:
+            speak_response("I don't think we've met yet. What's your name?")
+            if record_audio(CONVERSATION_DURATION, TEMP_AUDIO, use_vad=True):
+                name_transcript = transcribe_audio(TEMP_AUDIO)
+                person_name = extract_name(name_transcript)
+                if person_name:
+                    set_person_name(person_id, person_name)
+                    speak_response(f"Nice to meet you, {person_name}!")
+        else:
+            person_name = get_person_name(person_id)
+
     conversation_active = True
-    
+    session_readings = []
+    conversation_transcript = []
+
     while conversation_active:
         print("\n Listening... (speak now, I'll stop when you're done)")
         
@@ -507,11 +573,35 @@ def continuous_conversation(context, cv_pipeline):
             continue
         
         print(f"You said: {user_input}")
+        conversation_transcript.append(user_input)
+        voice_label, voice_confidence = detect_voice_emotion(TEMP_AUDIO)
+        text_label, text_confidence, text_description = detect_text_emotion(user_input)
+        emotions, face_rgb = cv_pipeline.execute()
+        vision_label, vision_confidence = (emotions[0]["emotion"], emotions[0]["confidence"]) if emotions else (None,
+                                                                                                                None)
+
+        if vision_label is not None:
+            record_session(session_readings, vision_label, vision_confidence, "vision")
+        if text_label is not None:
+            record_session(session_readings, text_label, text_confidence, "text")
+        if voice_label is not None:
+            record_session(session_readings, voice_label, voice_confidence, "voice")
         
         if check_for_sleep_word(user_input):
             print(f"\n Sleep word '{SLEEP_WORD}' detected!")
             print("\n Generating final conversation summary before sleep...")
             context.generate_summary()
+
+            emotion_summary = summarize_session(session_readings)
+            full_transcript = " ".join(conversation_transcript)
+            save_session(
+                person_id,
+                full_transcript,
+                emotion_summary["vision_emotion"], emotion_summary["vision_confidence"],
+                emotion_summary["text_emotion"], emotion_summary["text_confidence"],
+                emotion_summary["voice_emotion"], emotion_summary["voice_confidence"],
+            )
+
             farewell_message = "Goodbye! I'll be here when you need me. Just say the wake word to talk again."
             print(f"Assistant: {farewell_message}\n")
             speak_response(farewell_message)
@@ -519,7 +609,7 @@ def continuous_conversation(context, cv_pipeline):
             conversation_active = False
             break
         
-        response = generate_response(user_input, context)
+        response = generate_response(user_input, context, vision_emotion=vision_label, vision_confidence=vision_confidence, voice_emotion=voice_label, voice_confidence=voice_confidence, text_emotion=text_label, text_confidence=text_confidence, text_description=text_description)
         print(f"Assistant: {response}\n")
         context.add_exchange(user_input, response)
         speak_response(response)
