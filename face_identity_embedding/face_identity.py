@@ -55,7 +55,23 @@ def enroll_new_person(embedding):
     connection.close()
     return person_id
 
+def get_person_name(person_id):
+    connection = get_connection()
+    cursor = connection.cursor()
+    cursor.execute("SELECT name FROM persons WHERE id = ?", (person_id,))
+    row = cursor.fetchone()
+    connection.close()
+    return row[0] if row is not None else None
+
+def set_person_name(person_id, name):
+    connection = get_connection()
+    cursor = connection.cursor()
+    cursor.execute("UPDATE persons SET name = ? WHERE id = ?", (name, person_id))
+    connection.commit()
+    connection.close()
+
 def find_or_enroll_person(face_crop_rgb):
+    """Returns (person_id, is_new_person)."""
     embedding = compute_embedding(face_crop_rgb)
     known_person = load_known_person()
 
@@ -67,8 +83,8 @@ def find_or_enroll_person(face_crop_rgb):
             highest_similarity = similarity
             best_match_id = person_id
     if best_match_id is not None:
-            return best_match_id
-    return enroll_new_person(embedding)
+        return best_match_id, False
+    return enroll_new_person(embedding), True
 
 
 
