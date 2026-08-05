@@ -7,6 +7,12 @@ import wave
 import struct
 import math
 from datetime import datetime
+from cv.picture import CVPipeline
+from face_identity_embedding.face_identity import find_or_enroll_person
+from voice_text_emotion.voice_emotion import detect_voice_emotion
+from voice_text_emotion.text_emotion import detect_text_emotion
+from memory.memory_manager import save_session
+from memory.session_summary import record_session, summarize_session
 
 # Try to import pyaudio for VAD recording
 try:
@@ -474,12 +480,16 @@ def check_for_sleep_word(text):
     return SLEEP_WORD in text.lower()
 
 
-def continuous_conversation(context):
+def continuous_conversation(context, cv_pipeline):
     """Handle continuous back-and-forth conversation until sleep word"""
     print("\n Starting conversation mode...")
     if PYAUDIO_AVAILABLE:
         print(f" VAD active — recording will stop after {VAD_SILENCE_DURATION}s of silence below {VAD_SILENCE_THRESHOLD_DB} dBFS")
     speak_response("Yes, I'm here. How can I help you?")
+    cv_pipeline.turn_on_camera()
+    emotions, face_rgb = cv_pipeline.execute()
+    person_id = find_or_enroll_person(face_rgb) if face_rgb is not None else None
+
     
     conversation_active = True
     
@@ -505,6 +515,7 @@ def continuous_conversation(context):
             farewell_message = "Goodbye! I'll be here when you need me. Just say the wake word to talk again."
             print(f"Assistant: {farewell_message}\n")
             speak_response(farewell_message)
+            cv_pipeline.turn_off_camera()
             conversation_active = False
             break
         
@@ -530,6 +541,7 @@ def main():
     print("Press Ctrl+C to exit\n")
     
     context = ConversationContext(CONTEXT_FILE, SUMMARY_FILE)
+    cv_pipeline = CVPipeline()
     
     if context.history:
         print(f" Loaded {len(context.history)} previous exchanges")
@@ -555,7 +567,7 @@ def main():
                 print(f"Heard: {transcription}")
                 if check_for_wake_word(transcription):
                     print(f"\n Wake word detected! Entering conversation mode...\n")
-                    continuous_conversation(context)
+                    continuous_conversation(context, cv_pipeline)
                     print("\n Returning to sleep mode...")
                     time.sleep(1)
             
