@@ -19,7 +19,7 @@ class LinuxAudioBackend(AudioBackend):
 
             Defaults to ``"default"``.
     """
-    def __init__(self, config: dict[str, Any]) -> None:
+    def __init__(self, config: dict[str, Any], language:str = "en") -> None:
         self._backend = config.get("linux_audio_backend", "alsa")
         self._device = config.get("linux_audio_device", "default")
 

@@ -8,8 +8,8 @@ It should contain as little implementation logic as possible.
 Services perform work while the orchestrator decides when that work should occur.
 """
 import time
+from typing import Any
 
-from app.Types import LanguagePhrases
 # Component import
 from ioServices.audio import AudioService
 
@@ -29,12 +29,12 @@ class Orchestrator:
     individual services.
     """
 
-    def __init__(self, language:LanguagePhrases, audio_service: AudioService):
+    def __init__(self, language: dict[str, Any], audio_service: AudioService) -> None:
         self.audio_service = audio_service
         self.state = State.SLEEPING
-        self.lang = language
+        self.language = language
 
-        self.wake_word = "companion"
+        self.wake_word = language["wake_word"]
         self.wake_listen_duration = 5
 
     def startup(self):
@@ -43,7 +43,7 @@ class Orchestrator:
             self.await_wake_word()
             # Awaken
             self.state = State.ACTIVE
-            self.audio_service.speak(self.lang["Greeting"])
+            self.audio_service.speak(self.language["Greeting"], True)
 
             # Back to sleep
             self.state = State.SLEEPING

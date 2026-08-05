@@ -1,4 +1,7 @@
 {
+  "wake_word": "companion",
+  "sleep_word": "bye companion",
+
   "Greeting" : "Yes, I'm here. How can I help you?",
   "Shutdown" : "Goodbye, take care!"
 }

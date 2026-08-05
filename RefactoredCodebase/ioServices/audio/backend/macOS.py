@@ -2,10 +2,12 @@
 
 Configures FFmpeg audio input using the AVFoundation backend.
 """
+from typing import Any
+
 from . import AudioBackend
 
 class MacOSAudioBackend(AudioBackend):
-    def __init__(self, config: dict) -> None:
+    def __init__(self, config: dict[str, Any], language:str = "en") -> None:
         """Configure FFmpeg microphone input on Windows.
 
         Supported configuration keys:

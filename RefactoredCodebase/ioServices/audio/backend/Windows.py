@@ -7,10 +7,12 @@ from textwrap import dedent
 from typing import Any
 import subprocess
 
+import pyaudio
+
 from . import AudioBackend
 
 class WindowsAudioBackend(AudioBackend):
-    def __init__(self, config: dict[str, Any]) -> None:
+    def __init__(self, config: dict[str, Any], language:str = "en") -> None:
         """
         Supported configuration keys:
             ``windows_mic_name``:
@@ -19,15 +21,21 @@ class WindowsAudioBackend(AudioBackend):
                 If the configured microphone is unavailable, the first microphone
                 reported by ``FFmpeg`` is used.
         """
-        self._microphone = self._select_microphone(config)
+        self.language = language
+        self._voice = self._select_voice(language)
+
+        configured_microphone = str(config.get("input_device") or "").strip()
+        self._microphone = configured_microphone or self._default_microphone()
 
     def get_speak_command(self) -> list[str]:
         # TODO add language support to windows
         ps_script = """
-        Add-Type -AssemblyName System.Speech;
-        $s = New-Object System.Speech.Synthesis.SpeechSynthesizer;
-        $s.Rate = 0;
-        $s.Speak($args[0])
+        Add-Type -AssemblyName System.Speech
+
+        $s = New-Object System.Speech.Synthesis.SpeechSynthesizer
+        $s.SelectVoice($args[0])
+        $s.Rate = 0
+        $s.Speak($args[1])
         """
 
         return [
@@ -36,6 +44,7 @@ class WindowsAudioBackend(AudioBackend):
             "-NonInteractive",
             "-CommandWithArgs",
             ps_script,
+            self._voice,
         ]
 
     def ffmpeg_input_args(self) -> list[str]:
@@ -44,56 +53,51 @@ class WindowsAudioBackend(AudioBackend):
         ]
 
     @staticmethod
-    def _select_microphone(config: dict[str, Any]) -> str:
-        """Select the microphone to use for recording.
+    def _default_microphone() -> str:
+        """Using pyaudio to get the default device, only because windows is windows"""
+        audio = pyaudio.PyAudio()
 
-        Selection order:
-        1. Configured microphone, if present.
-        2. First microphone reported by FFmpeg.
-        3. Built-in fallback.
+        try:
+            device = audio.get_default_input_device_info()
+            return str(device["name"])
+        finally:
+            audio.terminate()
+
+    @staticmethod
+    def _select_voice(language: str) -> str:
+        ps_script = """
+        Add-Type -AssemblyName System.Speech
+
+        $s = New-Object System.Speech.Synthesis.SpeechSynthesizer
+        $lang = $args[0]
+
+        $voice = $s.GetInstalledVoices() |
+            Where-Object {
+                $_.Enabled -and
+                $_.VoiceInfo.Culture.TwoLetterISOLanguageName -eq $lang
+            } |
+            Select-Object -First 1
+
+        if (-not $voice) {
+            Write-Error "No installed voice found for language '$lang'"
+            exit 1
+        }
+
+        $voice.VoiceInfo.Name
         """
-        configured = config.get("input_device", "").strip()
 
         result = subprocess.run(
             [
-                "ffmpeg",
-                "-f",
-                "dshow",
-                "-list_devices",
-                "true",
-                "-i",
-                "dummy",
+                "pwsh",
+                "-NoProfile",
+                "-NonInteractive",
+                "-CommandWithArgs",
+                ps_script,
+                language,
             ],
+            check=True,
             capture_output=True,
             text=True,
-            errors="replace",
         )
 
-        available = [
-            line.split('"')[1].strip()
-            for line in (result.stderr + result.stdout).splitlines()
-            if "(audio)" in line and '"' in line
-        ]
-
-        # Use the configured microphone if FFmpeg found it, or if device
-        # enumeration failed and it cannot be verified.
-        if configured and (not available or configured in available):
-            return configured
-
-        # First available
-        if selected := available[0]:
-            if configured:
-                print(
-                    f"[Audio] Configured microphone not found: {configured!r}"
-                )
-                print("[Audio] Available microphones:")
-
-                for microphone in available:
-                    print(f"  - {microphone}")
-
-                print(f"[Audio] Using: {selected!r}")
-
-            return selected
-
-        # Hardcoded fallback
-        return "Microphone (Realtek Audio)"
+        return result.stdout.strip()

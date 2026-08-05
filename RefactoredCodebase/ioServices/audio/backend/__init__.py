@@ -27,15 +27,18 @@ class AudioBackend(Protocol):
 def get(
     system: str,
     config: dict[str, Any],
+    language: str = "en",
 )-> AudioBackend:
     """Creates the audio backend for the given operating system.
 
     Args:
+
         system:
             Operating-system name.
             Supported values are ``"Windows"``, ``"Linux"``, and ``"Darwin"``.
         config:
             Audio configuration values used by the selected backend.
+        language: user selected language.
 
     Returns:
         The audio backend for given operating system.
@@ -46,15 +49,15 @@ def get(
     match system:
         case "Windows":
             from .Windows import WindowsAudioBackend
-            return WindowsAudioBackend(config)
+            return WindowsAudioBackend(config, language)
 
         case "Linux":
             from .Linux import LinuxAudioBackend
-            return LinuxAudioBackend(config)
+            return LinuxAudioBackend(config, language)
 
         case "Darwin":
             from .macOS import MacOSAudioBackend
-            return MacOSAudioBackend(config)
+            return MacOSAudioBackend(config, language)
         case _:
             raise RuntimeError("Unsported OS")
 
