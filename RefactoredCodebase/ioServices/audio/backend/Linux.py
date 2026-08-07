@@ -20,12 +20,11 @@ class LinuxAudioBackend(AudioBackend):
             Defaults to ``"default"``.
     """
     def __init__(self, config: dict[str, Any], language:str = "en") -> None:
-        self._backend = config.get("linux_audio_backend", "alsa")
-        self._device = config.get("linux_audio_device", "default")
+        self._device = config.get("input_device", "default")
+        self.language = language
 
     def get_speak_command(self,) -> list[str]:
-        return ["espeak", "-v", _active_espeak_voice(), "-s", "145"]
+        return ["espeak", "-v", self.language, "-s", "145"]
 
     def ffmpeg_input_args(self) -> list[str]:
-        return ["-f", self._backend, "-i", self._device]
-
+        return ["-f", "alsa", "-i", self._device]

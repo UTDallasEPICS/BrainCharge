@@ -17,7 +17,6 @@ from . import backend
 
 class AudioService:
     """Capture and manage audio for the robot.
-
     Uses a platform-specific ``AudioBackend`` to configure audio peripherals.
     """
     def __init__(self,
@@ -28,13 +27,13 @@ class AudioService:
                  language: str = "en",
     ):
         self._config = config
-        self._backend = backend.get(system, config)
         self._language = language
+        self._backend = backend.get(system, config, language)
 
         self.audio_output_path = temp_directory / "audio.wav"
         self.transcript_output_path = temp_directory / "transcript"
 
-        # If we have a valid vosk model then preform the setup for it
+        # If we have a vosk model specified then preform the setup for it
         if vosk_model_path:
             self.interrupt_event = threading.Event()
 
@@ -84,6 +83,7 @@ class AudioService:
             transcription fails.
         """
         try:
+            # Maybe look into removing ffmpeg? Unsure why we use both pyaudio and ffmpeg
             subprocess.run([
                 "ffmpeg",
                 *self._backend.ffmpeg_input_args(),
@@ -160,7 +160,9 @@ class AudioService:
             return ""
 
     def _vosk_echo_monitor(self, tts_process, expected_sentence: str):
-        """Monitor microphone input while TTS is playing and interrupt on user speech.
+        """Monitor microphone input while TTS is playing and interrupt on speech.
+        Decided to keep vosk so that if user started speaking, it would stop talking but left out volume based interrupt
+        as it seemed redundant to stop speaking if it was just loud
 
         Args:
             tts_process:
@@ -207,21 +209,29 @@ class AudioService:
                 else:
                     heard = json.loads(recognizer.PartialResult()).get("partial", "").strip()
 
-                if len(heard.split()) < self._min_words:
+                heard_words = set(heard.lower().split())
+                if len(heard_words) < self._min_words:
                     continue
 
-                # _mic_content_matches_expected()
-                if heard.strip():
-                    heard_words = set(heard.lower().split())
-                    expected_words = set(expected_sentence.lower().split())
-                    overlap = len(heard_words & expected_words) / len(heard_words)
-                    print(f"  [echo-check] heard={heard!r:.60}  overlap={overlap:.2f}", flush=True)
+                # If there are more then the minimum amount of words then intersect the set of heard & expected
+                # Turn the number of this intersection to % and if there not overlapping then we are not hearing ourself
+                expected_words = set(expected_sentence.lower().split())
 
-                    if overlap < 0.4:
-                        print("  [echo-check] Content diverged — interrupting TTS.")
-                        tts_process.terminate()
-                        self.interrupt_event.set()
-                        break
+                # if len(heard.split()) < self._min_words:
+                #     continue
+                #
+                # # _mic_content_matches_expected()
+                # if heard.strip():
+                #     heard_words = set(heard.lower().split())
+                #     expected_words = set(expected_sentence.lower().split())
+                #     overlap = len(heard_words & expected_words) / len(heard_words)
+                #     print(f"  [echo-check] heard={heard!r:.60}  overlap={overlap:.2f}", flush=True)
+                #
+                #     if overlap < 0.4:
+                #         print("  [echo-check] Content diverged — interrupting TTS.")
+                #         tts_process.terminate()
+                #         self.interrupt_event.set()
+                #         break
 
         except Exception as e:
             print(f"[Vosk] Monitor error: {e}")

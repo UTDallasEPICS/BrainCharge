@@ -54,14 +54,21 @@ class WindowsAudioBackend(AudioBackend):
 
     @staticmethod
     def _default_microphone() -> str:
-        """Using pyaudio to get the default device, only because windows is windows"""
-        audio = pyaudio.PyAudio()
+        """Using pyaudio to get the default device from WASAPI
+        Notes:
+            I dont think this is the "correct" way to do this as we are using two different backends which could
+            differ, however since windows isn't the primary platform I am going to stop working on this
+            https://stackoverflow.com/questions/16684894/windows-get-default-microphone-name
 
-        try:
-            device = audio.get_default_input_device_info()
-            return str(device["name"])
-        finally:
-            audio.terminate()
+            Old code had a problem where it was truncating the device name to 32 char's
+        """
+        audio = pyaudio.PyAudio()
+        defaultDeviceIndex =  audio.get_host_api_info_by_type(pyaudio.paWASAPI)["defaultInputDevice"]
+        deviceName = audio.get_device_info_by_index(defaultDeviceIndex)["name"]
+
+        print(f"[Audio-Backend] Selecting default microphone: {deviceName}")
+        audio.terminate()
+        return deviceName
 
     @staticmethod
     def _select_voice(language: str) -> str:
@@ -100,4 +107,6 @@ class WindowsAudioBackend(AudioBackend):
             text=True,
         )
 
-        return result.stdout.strip()
+        selectedVoice = result.stdout.strip()
+        print(f"[Audio-Backend] Selecting voice: {selectedVoice}")
+        return selectedVoice

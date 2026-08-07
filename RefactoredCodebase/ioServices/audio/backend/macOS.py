@@ -3,6 +3,7 @@
 Configures FFmpeg audio input using the AVFoundation backend.
 """
 from typing import Any
+import subprocess
 
 from . import AudioBackend
 
@@ -16,7 +17,7 @@ class MacOSAudioBackend(AudioBackend):
 
                 Defaults to first available microphone.
         """
-        self._device = config.get("macos_audio_device", ":0")
+        self._device = config.get("input_device", ":0")
 
     def ffmpeg_input_args(self) -> list[str]:
         return ["-f", "avfoundation", "-i", self._device]
