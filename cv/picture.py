@@ -118,6 +118,22 @@ class CVPipeline:
             print("Turn off the camera successfully!")
 
 
+    def flush_buffer(self, n: int = 5) -> None:
+        """
+        Discard whatever frames are sitting in the camera's internal buffer.
+
+        cv2.VideoCapture keeps capturing into a buffer even when nothing calls
+        read() -- if the camera goes untouched for a while (e.g. during a long
+        VAD recording), the next read() can return a stale buffered frame
+        instead of what the camera is seeing right now. grab() is cheap (no
+        decode) so a handful of them quickly catches the buffer up to live.
+        """
+        if self.camera is None:
+            return
+        for _ in range(n):
+            self.camera.grab()
+
+
     def _get_turn_signal(self, w: int, x1: int, x2: int) -> str:
         """Helper method: Determine if the robot turns left or right"""
         center_dist = (x1 + x2 - w) / 2
@@ -274,20 +290,23 @@ class CVPipeline:
         emotions = []
 
         # Take the picture of the user with the opened camera
-        if not self.camera: 
+        if not self.camera:
             return emotions, None
+        self.flush_buffer()
         success, image = self.camera.read()
         if not success: 
             return emotions, None
 
-        #face_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         face_rgb = None
         try: 
             # The face detector captures only one image at the time
             analysis = self.face_detector(image)[0].boxes
             boxes = analysis.xyxy.cpu().numpy()
 
-            #if boxes is not None:
+            # len() check, not `is not None` -- YOLO returns an empty ndarray
+            # (never None) when no face is found, so `is not None` was always
+            # true and this branch silently ran on empty detections for a
+            # long time before it got caught.
             if len(boxes) > 0:
                 # The face the YOLO is most confident, which is often the closest face
                 h, w, _ = image.shape
