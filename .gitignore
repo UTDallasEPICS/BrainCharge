@@ -1,6 +1,13 @@
 # External dependencies
 whisper.cpp/
 
+# Facial recognition -- downloaded model weights, and per-person enrollment
+# photos / gallery cache (personal data, shouldn't be committed)
+facial_recognition/models/*.onnx
+facial_recognition/known_faces/*/
+facial_recognition/cache/*.npz
+facial_recognition/cache/*.sig
+
 # Python
 __pycache__/
 *.py[cod]

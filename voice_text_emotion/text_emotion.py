@@ -1,5 +1,7 @@
 import json
-import subprocess
+import requests
+
+from ollama_client import call_ollama
 
 OLLAMA_MODEL = "gemma3:1b"
 
@@ -26,28 +28,35 @@ def detect_text_emotion(transcript):
     )
 
     try:
-        result = subprocess.run(
-            ["ollama", "run", OLLAMA_MODEL, prompt], capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=90
-        )
-        summary_text = result.stdout.strip()
-        if "```json" in summary_text:
-            summary_text = summary_text.split("```json")[1].split("```")[0].strip()
-        elif "```" in summary_text:
-            summary_text = summary_text.split("```")[1].split("```")[0].strip()
+        summary_text = call_ollama(prompt, model=OLLAMA_MODEL, json_mode=True, timeout=90)
         parsed_summary = json.loads(summary_text)
-        summary_emotion = parsed_summary["emotion"]
-        summary_confidence = parsed_summary["confidence"]
-        summary_description = parsed_summary["description"]
+        summary_emotion = parsed_summary.get("emotion")
+        summary_description = parsed_summary.get("description", "")
+
+        # json_mode only guarantees valid JSON syntax, not that the fields we
+        # asked for actually show up -- on junk input (e.g. whisper's
+        # "[BLANK_AUDIO]" placeholder) the model sometimes omits "confidence"
+        # entirely, or writes it as a quoted string ("0.9") instead of a
+        # number. Either way, treat that as a failed detection rather than
+        # crashing or fabricating a default.
+        raw_confidence = parsed_summary.get("confidence")
+        if raw_confidence is None:
+            return (None, None, None)
+        summary_confidence = float(raw_confidence)
+
         if summary_emotion in EMOTION_LABELS:
             return (summary_emotion, summary_confidence, summary_description)
         else:
             return (None, None, None)
-    except subprocess.TimeoutExpired:
+    except requests.exceptions.Timeout:
         print("Text emotion detection timed out")
         return (None, None, None)
     except json.JSONDecodeError as e:
-        print(f"Failed to parse summary JSON: {e}")
+        print(f"Failed to parse text emotion JSON: {e}")
+        return (None, None, None)
+    except (ValueError, TypeError) as e:
+        print(f"Text emotion response had an unusable confidence value: {e}")
         return (None, None, None)
     except Exception as e:
-        print(f"Error generating summary: {e}")
+        print(f"Error detecting text emotion: {e}")
         return (None, None, None)

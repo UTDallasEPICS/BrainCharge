@@ -1,5 +1,9 @@
 from transformers import pipeline
 
+# ehcalabres/wav2vec2-emotion-recognition (tried first) has a transformers
+# version mismatch that leaves its classifier head unloaded -- confirmed via
+# near-uniform (~12.5%) scores and non-deterministic output across identical
+# runs. This model loads cleanly and gives deterministic, confident output.
 MODEL_NAME = "Dpngtm/wav2vec2-emotion-recognition"
 
 _classifier = None
