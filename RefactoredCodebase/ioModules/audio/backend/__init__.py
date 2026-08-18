@@ -3,13 +3,13 @@
 This module defines the interface implemented by each operating-system-specific
 audio backend and provides a factory for getting the correct implementation.
 """
-
+from pathlib import Path
 from typing import Any, Protocol
 
 class AudioBackend(Protocol):
     """Interface snub implemented by platform-specific audio backends."""
 
-    def get_speak_command(self)-> list[str]:
+    def get_speak_command(self, audio_path:str)-> list[str]:
         """
         Returns:
             Command-line arguments that run text to speach.

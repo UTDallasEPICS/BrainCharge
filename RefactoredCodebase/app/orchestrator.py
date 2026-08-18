@@ -11,7 +11,7 @@ import time
 from typing import Any
 
 # Component import
-from ioServices.audio import AudioService
+from ioModules.audio import AudioService
 
 # Python imports
 from enum import Enum
@@ -34,56 +34,51 @@ class Orchestrator:
         self.state = State.SLEEPING
         self.language = language
 
-        self.wake_word = language["wake_word"]
-        self.wake_listen_duration = 5
+        self.wakeWord = language["wake_word"]
+        self.sleepWord = language["sleep_word"]
 
     def startup(self):
         """Main control loop."""
+        # This is somewhat ugly, need to come in and remove some indenting to make this look cleaner but that's
+        # aesthetics stuff
         while self.state != State.EXIT:
-            self.await_wake_word()
-            # Awaken
-            self.state = State.ACTIVE
-            self.audio_service.speak(self.language["Greeting"], True)
 
-            # Back to sleep
-            self.state = State.SLEEPING
+            # (This segment is long and rambly and would probs be better served in a documentation document rather than a random comment)
+            # Move each state into their own static class?
+            # If we move each state into their own class, we could define a method like state_enter()/state_exit()
+            # which each state can run their own specific state code. With current approach, expanding to more states
+            # would be difficult as we would need to hardcode the exit & entry for each one on change, rather than
+            # one consolidated place.
+            # For now this is fine but if we expand to more states then we should consider a better approach.
 
+            # viable alt: change_state_enter(state) & change_state_exit(state)
+            #   function which just has a switch for each state and the code they want to do when starting.
+            #   Not the cleanest but cleaner then current
 
-    def await_wake_word(self):
-        """Block until the configured wake word is detected."""
-        while True:
-            print("[Sleep] Listening for wake word...")
+            match self.state:
+                case State.SLEEPING:
+                    print("[Orchestrator-Sleep] Listening for wake word...")
+                    transcript = self.audio_service.listen()
 
-            transcript = self.audio_service.listen(
-                duration=self.wake_listen_duration,
-            )
+                    if transcript == "[BLANK_AUDIO]":
+                        continue
 
-            if not transcript:
-                time.sleep(0.3)
-                continue
+                    if self.wakeWord in transcript.casefold():
+                        print(f'[Orchestrator-Sleep] "{self.wakeWord}" detected.')
 
-            print(f"[Sleep] Heard: {transcript}")
+                        self.state = State.ACTIVE
+                        self.audio_service.speak(self.language["greeting"], True)
 
-            if self.wake_word in transcript.casefold():
-                print(f'[Wake] "{self.wake_word}" detected.')
-                return
+                case State.ACTIVE:
+                    print(f"\n[Orchestrator-wake] Listening")
+                    transcript = self.audio_service.listen()
 
-            # await loop
-            # while True:
-            #     print("\n[Sleep] Listening for wake word...")
-            #     if not self._listen(listenDuration, use_vad=False):
-            #         # time.sleep(1) # Delay between starting listening where it will be doing nothing.
-            #         continue
-            #
-            #     if transcription := self._transcribe_audio(self.audio_output_path):
-            #         print(f"[Sleep] Heard: {transcription}")
-            #         wakeWord = self.config["wake_word"]
-            #         if wakeWord in transcription.lower():
-            #             print(f"\n[Wake] \"{wakeWord}\" detected! Starting active mode...\n")
-            #             return
-            #         # if check_for_wake_word(transcription):
-            #         #     print(f"\n[Wake] \"{WAKE_WORD}\" detected! Starting active mode...\n")
-            #         #     start_active_mode(context)
-            #         #     print("[Sleep] Returning to sleep mode...")
-            #         #     time.sleep(1)
-            #     time.sleep(0.3)
+                    if transcript == "[BLANK_AUDIO]":
+                        self.audio_service.speak(self.language["empty_response"])
+                    elif self.sleepWord in transcript.casefold():
+                        print(f"\n[Orchestrator-wake] Sleep word detected — ending session.")
+
+                        self.state = State.SLEEPING
+                        self.audio_service.speak(self.language["shutdown"], True)
+                    else:
+                        print(f"[Orchestrator-wake] Placeholder print")

@@ -5,19 +5,15 @@
     "input_device": "",
 
     "whisper": {
-      "binary": "C:/Users/nnorm/CLionProjects/whisper.cpp/cmake-build-debug/bin/whisper-cli.exe",
+
+      "binary": "C:/Users/nnorm/CLionProjects/whisper.cpp/build-x64-windows-msvc-cuda-release/bin/whisper-cli.exe",
       "model": "C:/Users/nnorm/PycharmProjects/BrainCharge/whisper.cpp/models/ggml-base-q5_1.bin"
     },
 
     "interrupt": {
-      "sample_rate":1600,
-      "chunk_size": 1024,
       "minimum_words": 2,
       "warmup_seconds": 0.4,
       "echo_similarity_threshold": 0.55
-    },
-
-    "wake_word_listen_duration": 3,
-    "conversation_duration": 5
+    }
   }
 }

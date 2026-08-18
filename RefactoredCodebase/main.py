@@ -5,10 +5,9 @@ import platform
 import tempfile
 import shutil
 
-from Locales.language_helper import load_locale_config
+from languageFiles.language_helper import load_locale_config
 from app.orchestrator import Orchestrator
-from ioServices.audio import AudioService
-
+from ioModules.audio import AudioService
 
 def load_json(path: Path) -> dict:
     if not path.is_file():
@@ -24,7 +23,7 @@ def main() -> None:
     """
     system = platform.system()
 
-    config = Path("config.json")
+    config = Path("userConfig.json")
     if not config.is_file():
         shutil.copy2(Path(f"app/defaultConfigs/{system.lower()}.json"), config)
         print(f"[MAIN] Config not found: Creating default config for {system}")
@@ -33,7 +32,7 @@ def main() -> None:
     audio_config = config.get("audio", {})
 
     language = config.get("language", "en")
-    languagePhrases, vosk_model_path  = load_locale_config(language)
+    languagePhrases, vosk_model_path, piper_model_path  = load_locale_config(language)
 
     temp_parent = (
         "/dev/shm"
@@ -51,6 +50,7 @@ def main() -> None:
             temp_directory=Path(temporary_directory),
             config=audio_config,
             vosk_model_path=vosk_model_path,
+            piper_model_path=piper_model_path,
         )
 
         orchestrator = Orchestrator(
@@ -59,7 +59,6 @@ def main() -> None:
         )
 
         orchestrator.startup()
-
 
 if __name__ == "__main__":
     main()
