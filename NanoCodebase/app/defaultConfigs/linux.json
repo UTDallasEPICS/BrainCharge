@@ -1,0 +1,19 @@
+{
+  "language": "en",
+
+  "audio": {
+    "input_device": "",
+
+    "whisper": {
+
+      "binary": "C:/Users/nnorm/CLionProjects/whisper.cpp/build-x64-windows-msvc-cuda-release/bin/whisper-cli.exe",
+      "model": "C:/Users/nnorm/PycharmProjects/BrainCharge/whisper.cpp/models/ggml-base-q5_1.bin"
+    },
+
+    "interrupt": {
+      "minimum_words": 2,
+      "warmup_seconds": 0.4,
+      "echo_similarity_threshold": 0.55
+    }
+  }
+}

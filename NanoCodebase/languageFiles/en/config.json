@@ -1,0 +1,11 @@
+{
+  "wake_word": "companion",
+  "sleep_word": [
+    "bye, companion",
+    "bye companion"
+  ],
+
+  "greeting" : "Yes, I'm here. How can I help you?",
+  "shutdown" : "Goodbye, take care!",
+  "empty_response": "I didn't hear you clearly. Could you repeat that?"
+}
