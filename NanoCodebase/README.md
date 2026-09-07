@@ -8,17 +8,15 @@ For full robot deployment on NVIDIA Jetson Orin Nano, see [JETSON_SETUP.md](docs
 
 ## What works on PC
 
-| Feature                      | PC testing         | Jetson robot |
-|------------------------------|--------------------|--------------|
-| Wake word (`companion`)      | Yes                | Yes          |
-| Speech-to-text (Whisper.cpp) | Yes                | Yes          |
-| Text-to-speech (PiperTTS)    | Yes                | Yes          |
-| VAD recording                | Yes (with PyAudio) | Yes          |
-| LLM replies (Ollama)         | No                 | No           |
-| Arduino motors               | No                 | No           |
-| Camera / person tracking     | No                 | No           |
-
-> **Jetson code is unchanged.** PC mode only changes defaults via `runtime_platform.py` and `config.json`. The same `cv_pipeline/` code runs on both; `picture.py` already picks DirectShow on Windows and ALSA/V4L on Jetson.
+| Feature                      | PC testing | Jetson robot                             |
+|------------------------------|------------|------------------------------------------|
+| Wake word (`companion`)      | Yes        | Yes                                      |
+| Speech-to-text (Whisper.cpp) | Yes        | Yes (CUDA support requires manual build) |
+| Text-to-speech (PiperTTS)    | Yes        | Yes                                      |
+| VAD recording (PyAudio)      | Yes        | Yes                                      |
+| LLM replies (Ollama)         | No         | No                                       |
+| Hardware integration         | No         | No                                       |
+| Camera / person tracking     | No         | No                                       |
 
 ---
 
@@ -39,7 +37,7 @@ cd C:\path\to\BrainCharge\NanoCodebase
 uv sync
 uv run python3 scripts/setup.py
 ```
-Will install whisper.cpp & model, Piper model, LLM from Ollama, and vosk model 
+Will install LLM from Ollama, whisper.cpp & model, Piper model, , and vosk model.
 
 ---
 
@@ -53,7 +51,7 @@ uv sync
 
 ---
 
-## 2. Install Whisper.cpp (clone, build, download model)
+## 1. Install Whisper.cpp (download model & binary)
 
 **Not included when you clone BrainCharge** — each PC must do this once (`whisper.cpp/` is gitignored).
 
@@ -78,8 +76,8 @@ Expand-Archive `
 Download the model:
 ```powershell
 Invoke-WebRequest `
-  -Uri "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.en.bin" `
-  -OutFile "whisper.cpp/Release/ggml-base.en.bin"
+  -Uri "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.bin" `
+  -OutFile "whisper.cpp/ggml-base.bin"
 ```
 
 Verify the build:
@@ -92,12 +90,12 @@ Test-Path .\whisper.cpp\models\ggml-base.en.bin
 Both should succeed.
 
 ---
-## 3. Install Piper model
+## 2. Install Piper model
 ```powershell
   python3 piper.download_voices
 ```
 
-## 4. Install Ollama and pull a model
+## 3. Install Ollama and pull a model
 
 1. Download and install from [ollama.com](https://ollama.ai)
 2. **Close and reopen PowerShell** so `ollama` is on your PATH
@@ -115,13 +113,19 @@ ollama run gemma3n:e4b "Hello, are you working?"
 ```
 
 ---
-## 5. Install vosk model
+## 4. Install vosk model
 Download the model:
 
+Vosk models must be downloaded into there respective language file. Example for english: `vosk-model-small-en-us-0.15`
+
 ```powershell
-# From project root
-Invoke-WebRequest -Uri "https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip" -OutFile vosk.zip
-Expand-Archive vosk.zip -DestinationPath .
+# From slected language file
+Invoke-WebRequest `
+    -Uri "https://alphacephei.com/vosk/models/[VOSK MODEL NAME].zip" `
+    -OutFile vosk.zip
+
+Expand-Archive vosk.zip `
+    -DestinationPath ./
 Remove-Item vosk.zip
 ```
 

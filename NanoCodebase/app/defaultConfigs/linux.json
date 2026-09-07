@@ -5,9 +5,8 @@
     "input_device": "",
 
     "whisper": {
-
-      "binary": "C:/Users/nnorm/CLionProjects/whisper.cpp/build-x64-windows-msvc-cuda-release/bin/whisper-cli.exe",
-      "model": "C:/Users/nnorm/PycharmProjects/BrainCharge/whisper.cpp/models/ggml-base-q5_1.bin"
+      "binary":"whisper.cpp/whisper-bin-ubuntu-arm64/whisper-cli",
+      "model": "whisper.cpp/ggml-base.bin"
     },
 
     "interrupt": {

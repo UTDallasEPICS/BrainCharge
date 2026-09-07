@@ -14,19 +14,19 @@ Requires:
             python -m piper.download_voices
 """
 import math
-import threading
-import time
-import warnings
+import subprocess
+import threading    # vosk
 import json
 import wave
 import struct
 from pathlib import Path
 from typing import Any
-import subprocess
+from time import time
+from warnings import warn
 
+from pyaudio import PyAudio, paInt16
 from piper import PiperVoice
 
-import pyaudio
 from . import backend
 
 # Audio internal configs
@@ -45,19 +45,15 @@ class AudioService:
     Right now, code should be expected to be synchronous but there should become a point where speak() and listen() are async.
     """
     def __init__(self,
-                 system: str,
                  config: dict[str, Any],
                  temp_directory: Path,
                  vosk_model_path: Path,
                  piper_model_path: Path,
-                 language: str = "en",
     ):
-        self._config = config           # Audio config options
-        self._language = language       # Currently selected user language
+        self._language = config.get("language", "en")       # Currently selected user language
 
-        # self._backend = backend.get(system, config, language)   # The backend which abstracts OS specific functionality
         # This might be unnecessary as piper has smoothed over much of the OS specific issues that we were having for audio output
-
+        # self._backend = backend.get(system, config, language)   # The backend which abstracts OS specific functionality
 
         # Using the CLI it must start a separate process and in that case new model every time. https://github.com/OHF-Voice/piper1-gpl/blob/main/docs/CLI.md
         # Instead we load piper directly through the python API. This also allowed implementation of streaming and GPU support
@@ -68,6 +64,10 @@ class AudioService:
         self.audio_input_path = str(temp_directory / "audioUserInput.wav")      # User's voice input
         self.audio_output_path = str(temp_directory / "audioSpeachOutput.wav")  # TTS Output
         self.transcript_output_path = temp_directory / "transcript"             # STT Output
+
+        whisper_config = config["whisper"]
+        self.whisper_binary = whisper_config["binary"]
+        self.whisper_model = whisper_config["model"]
 
         # If we have a vosk model specified then preform the setup for it
         if vosk_model_path:
@@ -82,7 +82,7 @@ class AudioService:
                 from vosk import KaldiRecognizer, Model
 
                 if not vosk_model_path.is_dir():
-                    warnings.warn(
+                    warn(
                         f"""Vosk model directory was not found: {vosk_model_path}.
                         Echo-aware interruption is disabled."""
                     )
@@ -92,12 +92,12 @@ class AudioService:
                 self._kaldi_recognizer = KaldiRecognizer
 
             except ImportError:
-                warnings.warn(
+                warn(
                     "Vosk is not installed; echo-aware TTS interruption is disabled. "
                     "Install it with: pip install vosk"
                 )
             except Exception as error:
-                warnings.warn(
+                warn(
                     f"Could not initialize the Vosk model: {error}"
                 )
 
@@ -124,11 +124,11 @@ class AudioService:
 
             frames = []
             silence_start = None
-            recording_start = time.time()
+            recording_start = time()
             speech_detected = False
 
             while True:
-                elapsed = time.time() - recording_start
+                elapsed = time() - recording_start
 
                 # Hard cap
                 if elapsed >= max_duration:
@@ -151,8 +151,8 @@ class AudioService:
                 else:
                     if elapsed >= min_duration and speech_detected:
                         if silence_start is None:
-                            silence_start = time.time()
-                        sil_elapsed = time.time() - silence_start
+                            silence_start = time()
+                        sil_elapsed = time() - silence_start
                         status = f"silence {sil_elapsed:.1f}/{silence_duration:.1f}s"
                     else:
                         status = "waiting..."
@@ -160,7 +160,7 @@ class AudioService:
                 print(f"\r {db:6.1f} dBFS  |  {status:<22} | {elapsed:.1f}s", end="", flush=True)
 
                 if not is_speech and elapsed >= min_duration and speech_detected:
-                    if silence_start and time.time() - silence_start >= silence_duration:
+                    if silence_start and time() - silence_start >= silence_duration:
                         print(f"\n  [Audio] VAD Silence threshold reached, stopping.")
                         break
 
@@ -227,7 +227,7 @@ class AudioService:
             Popen[bytes]: TTS subprocess
         """
         # look at streaming in piper doc (posted above where we init model)
-        pa = pyaudio.PyAudio()
+        pa = PyAudio()
         stream = None
 
         try:
@@ -285,18 +285,17 @@ class AudioService:
 
     def _transcribe_audio(self, audio_file: str|None=None) -> str:
         print("  [Audio] Beginning transcription")
-        transcription_start = time.time()
+        transcription_start = time()
 
         if audio_file is None:
             audio_file = str(self.audio_input_path)
 
         try:
-            whisper_config = self._config.get("whisper")
 
             # https://thomasthelliez.com/blog/run-whisper-cpp-with-cuda-on-jetson-orin-nano-super/
             subprocess.run([
-                whisper_config["binary"],
-                "-m", whisper_config["model"],
+                self.whisper_binary,
+                "-m", self.whisper_model,
                 "-f", audio_file,
                 "-of", str(self.transcript_output_path),
                 "-otxt",
@@ -309,7 +308,7 @@ class AudioService:
             ).strip()
 
             print(
-                f"  [Audio] Transcription took {time.time() - transcription_start:.1f}s\n"
+                f"  [Audio] Transcription took {time() - transcription_start:.1f}s\n"
                 f"      Heard: \"{transcript}\""
             )
             return transcript
@@ -322,12 +321,12 @@ class AudioService:
 
     @staticmethod
     def _get_audio_input_stream(chunk_size = VAD_CHUNK_SIZE, sample_rate = VAD_SAMPLE_RATE):
-        PyAudio = pyaudio.PyAudio()
-        stream = PyAudio.open(
-            format=pyaudio.paInt16, channels=1, rate=sample_rate,
+        py_audio = PyAudio()
+        stream = py_audio.open(
+            format=paInt16, channels=1, rate=sample_rate,
             input=True, frames_per_buffer=chunk_size
         )
-        return PyAudio, stream
+        return py_audio, stream
 
     @staticmethod
     def _calculate_rms_db(audio_chunk) -> float:
@@ -433,9 +432,8 @@ class AudioService:
         except Exception as e:
             print(f"[Vosk] Monitor error: {e}")
         finally:
-            try:
+            if stream:
                 stream.stop_stream()
                 stream.close()
+            if pa:
                 pa.terminate()
-            except Exception:
-                pass

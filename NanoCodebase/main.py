@@ -2,20 +2,11 @@ from pathlib import Path
 import json
 import os
 import platform
-import tempfile
+from tempfile import TemporaryDirectory
 import shutil
 
-from languageFiles.language_helper import load_locale_config
 from app.orchestrator import Orchestrator
 from ioModules.audio import AudioService
-
-def load_json(path: Path) -> dict:
-    if not path.is_file():
-        raise FileNotFoundError(f"JSON file not found: {path}")
-
-    with path.open("r", encoding="utf-8") as file:
-        return json.load(file)
-
 
 def main() -> None:
     """
@@ -28,11 +19,17 @@ def main() -> None:
         shutil.copy2(Path(f"./app/defaultConfigs/{system.lower()}.json"), config)
         print(f"[MAIN] Config not found: Creating default config for {system}")
 
-    config = load_json(config)
+
+    with config.open("r", encoding="utf-8") as file:
+        config = json.load(file)
+
     audio_config = config.get("audio", {})
 
-    language = config.get("language", "en")
-    languagePhrases, vosk_model_path, piper_model_path  = load_locale_config(language)
+    language_dir = Path("languageFiles") / config.get("language", "en")
+    with (language_dir / "config.json").open("r", encoding="utf-8") as file:
+        language_phrases = json.load(file)
+    piper_model_path:Path = next(language_dir.glob("*.onnx"))
+    vosk_model_path:Path = next(language_dir.glob("vosk*"))
 
     temp_parent = (
         "/dev/shm"
@@ -40,21 +37,19 @@ def main() -> None:
         else None
     )
 
-    with tempfile.TemporaryDirectory(
+    with TemporaryDirectory(
         prefix="companion_robot_",
         dir=temp_parent,
     ) as temporary_directory:
         audio = AudioService(
-            system=system,
-            language=config["language"],
-            temp_directory=Path(temporary_directory),
             config=audio_config,
+            temp_directory=Path(temporary_directory),
             vosk_model_path=vosk_model_path,
             piper_model_path=piper_model_path,
         )
 
         orchestrator = Orchestrator(
-            language=languagePhrases,
+            language=language_phrases,
             audio_service=audio,
         )
 

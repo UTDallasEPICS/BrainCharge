@@ -5,7 +5,7 @@
     "input_device": "",
 
     "whisper": {
-      "binary":"whisper.cpp/whisper-cli.exe",
+      "binary":"whisper.cpp/release/whisper-cli.exe",
       "model": "whisper.cpp/ggml-base.bin"
     },
 
