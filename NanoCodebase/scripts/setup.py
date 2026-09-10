@@ -15,7 +15,7 @@ WHISPER_DIR = ROOT / "whisper.cpp"
 WHISPER_MODEL = "ggml-base.bin"
 WHISPER_MODEL_URL = "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/" + WHISPER_MODEL
 
-LANGUAGE_FILE_DIR = ROOT / "LanguageFiles"
+LANGUAGE_FILE_DIR = ROOT / "languageFiles"
 LANGUAGE_MODELS = [
     (
         "en",                           # Language
