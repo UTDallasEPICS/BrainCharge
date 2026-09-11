@@ -1,0 +1,18 @@
+{
+  "language": "en",
+
+  "audio": {
+    "input_device": "",
+
+    "whisper": {
+      "binary":"whisper.cpp/release/whisper-cli.exe",
+      "model": "whisper.cpp/ggml-base.bin"
+    },
+
+    "interrupt": {
+      "minimum_words": 2,
+      "warmup_seconds": 0.4,
+      "echo_similarity_threshold": 0.55
+    }
+  }
+}

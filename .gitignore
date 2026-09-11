@@ -19,6 +19,13 @@ build/
 .coverage
 htmlcov/
 *.cover
+.idea/
 
-# --- Whisper.cpp (clone, build, download model — see PC_TESTING.md §2 / JETSON_SETUP.md §5.3) ---
+userConfig.json
+
+# --- Whisper.cpp (model & Binary — see README.md §2 / JETSON_SETUP.md §5.3) ---
 whisper.cpp/
+
+# --- Audio
+*.onnx*
+vosk*/
