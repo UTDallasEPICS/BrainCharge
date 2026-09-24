@@ -1,0 +1,104 @@
+.reminders {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  overflow-y: auto;
+  padding-bottom: 80px;
+}
+.rem-header {
+  padding: 52px 20px 16px;
+}
+.rem-header h1 {
+  font-size: calc(26px * var(--font-scale));
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.3px;
+}
+.rem-header p {
+  font-size: calc(14px * var(--font-scale));
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+.rem-body {
+  padding: 0 16px 16px;
+}
+.add-rem-btn {
+  width: 100%;
+  padding: 15px;
+  background: var(--teal);
+  color: #fff;
+  border: none;
+  border-radius: 14px;
+  font-size: calc(15px * var(--font-scale));
+  font-weight: 500;
+  cursor: pointer;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background 0.15s;
+}
+.add-rem-btn:hover { background: var(--teal-dark); }
+.section-title {
+  font-size: calc(17px * var(--font-scale));
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 12px;
+}
+.rem-card {
+  background: #fff;
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  border: 0.5px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.rem-icon {
+  width: 36px;
+  height: 36px;
+  background: var(--blue-bg);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.rem-info { flex: 1; }
+.rem-title {
+  font-size: calc(15px * var(--font-scale));
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+}
+.rem-meta {
+  font-size: calc(12px * var(--font-scale));
+  color: var(--text-muted);
+}
+.rem-tag {
+  font-size: calc(11px * var(--font-scale));
+  padding: 3px 8px;
+  border-radius: 20px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.rem-tag.soon { background: #faeeda; color: #854f0b; }
+.rem-tag.ok { background: var(--blue-bg); color: var(--teal-dark); }
+.del-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+}
+.empty-state {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: calc(14px * var(--font-scale));
+  padding: 40px 20px;
+}
