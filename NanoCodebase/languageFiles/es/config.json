@@ -1,0 +1,8 @@
+{
+  "wake_word": "compañero",
+  "sleep_word": "adiós, compañero",
+
+  "greeting" : "Sí, en qué te puedo ayudar?",
+  "shutdown" : "¡Adiós, cuídate!",
+  "empty_response": "No te escuché bien. ¿Podrías repetir eso?"
+}

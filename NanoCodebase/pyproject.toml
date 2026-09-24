@@ -1,0 +1,15 @@
+[project]
+name = "braincharge"
+version = "0.1.0"
+description = "Add your description here"
+authors = [
+    { name = "PhoenixWolf0", email = "nnorman1@yahoo.com" }
+]
+requires-python = ">=3.13,<3.14"
+
+dependencies = [
+    "piper-tts==1.8.0",
+    "pyaudio>=0.2.14",
+    "vosk>=0.3.45",
+]
+
