@@ -354,7 +354,7 @@ You need **two terminals** — backend and frontend run separately.
 ### Terminal 1 — Backend
 
 ```powershell
-cd reactApp/frontend
+cd reactApp/backend
 npm run dev
 ```
 
@@ -379,7 +379,7 @@ Open: **http://localhost:5173**
 ### Verify before using the UI
 
 ```powershell
-cd reactApp/frontend
+cd reactApp/backend
 npm run test-calendar
 ```
 
@@ -409,9 +409,6 @@ Run from `reactApp/frontend/`:
 | Command | What it does |
 |---------|--------------|
 | `npm run dev` | Start React app (Vite, port 5173) |
-| `npm run dev` | Start backend with auto-reload (`node --watch`) |
-| `npm run dev:start` | Start backend without watch (production-style) |
-| `npm run test-calendar` | Test Google Calendar access (no server needed) |
 | `npm run build` | Build frontend to `dist/` |
 | `npm run preview` | Preview production build |
 
@@ -419,9 +416,9 @@ Run from `reactApp/backend/`:
 
 | Command | What it does |
 |---------|--------------|
-| `npm run dev` | Start API with auto-reload |
-| `npm start` | Start API |
-| `npm run test-calendar` | Test calendar connection |
+| `npm run dev` | Start API with auto-reload (`node --watch`) |
+| `npm start` | Start API without watch |
+| `npm run test-calendar` | Test Google Calendar access |
 
 ---
 
@@ -475,6 +472,7 @@ You can also create events directly in Google Calendar — make sure you select 
 The backend is not running. Start it:
 
 ```powershell
+cd reactApp/backend
 npm run dev
 ```
 
@@ -485,6 +483,7 @@ Another process is already on port 3001 (often a previous server instance).
 ```powershell
 netstat -ano | findstr :3001
 taskkill /PID 49284 /F
+cd reactApp/backend
 npm run dev
 ```
 
@@ -501,7 +500,7 @@ Sync is working. The calendar has no events in the loaded date range (30 days ag
 
 1. Confirm the event is on the calendar whose ID is in `GOOGLE_CALENDAR_ID`
 2. In Google Calendar event editor, check the **calendar dropdown** under the title
-3. Run `npm run test-calendar` and confirm the Calendar ID matches
+3. From `backend/`, run `npm run test-calendar` and confirm the Calendar ID matches
 
 ### `Failed to verify calendar access` / 403 / 404
 
@@ -554,9 +553,9 @@ The Vite proxy targets `127.0.0.1:3001` (not `localhost`) to avoid Windows IPv6 
 - [ ] `BETTER_AUTH_SECRET` generated and added to `backend/.env`
 - [ ] `BETTER_AUTH_URL` and `CLIENT_ORIGIN` set to `http://localhost:5173`
 - [ ] `npm install` in both `reactApp/frontend/` and `reactApp/backend/`
-- [ ] `npm run test-calendar` succeeds
-- [ ] `npm run dev` running in Terminal 1
-- [ ] `npm run dev` running in Terminal 2
+- [ ] `npm run test-calendar` succeeds (from `backend/`)
+- [ ] `npm run dev` running in Terminal 1 (`backend/`)
+- [ ] `npm run dev` running in Terminal 2 (`frontend/`)
 - [ ] http://127.0.0.1:3001/api/health returns `ok: true`
 - [ ] http://127.0.0.1:3001/api/auth/ok returns `ok: true`
 - [ ] Create account + sign in + sign out works in the app
