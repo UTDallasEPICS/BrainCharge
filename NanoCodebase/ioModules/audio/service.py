@@ -23,10 +23,8 @@ from pathlib import Path
 from typing import Any
 from time import time
 from warnings import warn
-
 from pyaudio import PyAudio, paInt16
 from piper import PiperVoice
-
 from . import backend
 
 # Audio internal configs
@@ -35,7 +33,7 @@ VAD_CHUNK_SIZE = 1024
 
 DEFAULT_VAD_MIN_RECORDING  = 0.5
 DEFAULT_VAD_MAX_RECORDING  = 30.0
-DEFAULT_VAD_SILENCE_THRESHOLD_DB = -30
+DEFAULT_VAD_SILENCE_THRESHOLD_DB = -45
 DEFAULT_VAD_SILENCE_DURATION = 1.2
 
 class AudioService:

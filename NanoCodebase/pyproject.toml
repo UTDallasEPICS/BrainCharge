@@ -5,11 +5,20 @@ description = "Add your description here"
 authors = [
     { name = "PhoenixWolf0", email = "nnorman1@yahoo.com" }
 ]
-requires-python = ">=3.13,<3.14"
+requires-python = ">=3.12,<3.13"
 
 dependencies = [
+    "huggingface-hub>=1.32.0",
+    "llama-cpp-python>=0.3.35",
     "piper-tts==1.8.0",
     "pyaudio>=0.2.14",
     "vosk>=0.3.45",
 ]
 
+[tool.uv.sources]
+llama-cpp-python = { index = "llama-cpp-cu132" }
+
+[[tool.uv.index]]
+name = "llama-cpp-cu132"    # llama-cpp-python's precompiled CUDA
+url = "https://abetlen.github.io/llama-cpp-python/whl/cu132"
+explicit = true

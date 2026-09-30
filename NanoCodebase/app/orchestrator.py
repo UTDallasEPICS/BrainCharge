@@ -7,9 +7,8 @@ communication between independent services.
 It should contain as little implementation logic as possible.
 Services perform work while the orchestrator decides when that work should occur.
 """
-import time
 from typing import Any
-
+from ConversationModules.LLM.module import LLMModule
 # Component import
 from ioModules.audio import AudioService
 
@@ -33,6 +32,8 @@ class Orchestrator:
         self.audio_service = audio_service
         self.state = State.SLEEPING
         self.language = language
+
+        self.llm = LLMModule()
 
         self.wakeWord = language["wake_word"]
         self.sleepWord = language["sleep_word"]
@@ -67,18 +68,24 @@ class Orchestrator:
                         print(f'[Orchestrator-Sleep] "{self.wakeWord}" detected.')
 
                         self.state = State.ACTIVE
+                        self.llm.startup()
                         self.audio_service.speak(self.language["greeting"], True)
 
                 case State.ACTIVE:
                     print(f"\n[Orchestrator-wake] Listening")
-                    transcript = self.audio_service.listen()
+                    transcript = self.audio_service.listen()    # TODO: Look into streaming this into the LLM/sleep detection
+                    transcript = transcript.casefold()
 
                     if transcript == "[BLANK_AUDIO]":
                         self.audio_service.speak(self.language["empty_response"])
-                    elif self.sleepWord in transcript.casefold():
+                    elif any(word.casefold() in transcript.casefold() for word in self.sleepWord):
                         print(f"\n[Orchestrator-wake] Sleep word detected — ending session.")
 
                         self.state = State.SLEEPING
                         self.audio_service.speak(self.language["shutdown"], True)
+                        self.llm.shutdown()
                     else:
-                        print(f"[Orchestrator-wake] Placeholder print")
+                        # print(f"[Orchestrator-wake] Placeholder print")
+                        reply = self.llm.generate(transcript)
+                        print(f"[Orchestrator-wake] LLM response: {reply}")
+                        self.audio_service.speak(reply)
