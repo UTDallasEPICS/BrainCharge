@@ -1,0 +1,4 @@
+node_modules
+auth.db
+.env
+service-account.json
