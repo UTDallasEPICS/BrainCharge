@@ -63,8 +63,8 @@ class LLMModule:
             return
 
         llm:Llama = Llama.from_pretrained(
-            repo_id="unsloth/gemma-4-E4B-it-qat-GGUF",
-            filename="gemma-4-E4B-it-qat-UD-Q4_K_XL.gguf",
+            repo_id="unsloth/gemma-4-E4B-it-qat-mobile-GGUF",
+            filename="gemma-4-E4B-it-qat-UD-Q2_K_XL.gguf",
             n_gpu_layers=-1,
             n_ctx=CONTEXT_SIZE,
             verbose=False,
