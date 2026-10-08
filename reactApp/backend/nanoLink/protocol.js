@@ -19,6 +19,24 @@ export const TYPES = {
 // Set of message types that are permitted over the SSE stream for the face UI
 export const FACE_EVENT_TYPES = new Set([TYPES.ROBOT_STATE, TYPES.ROBOT_EXPRESSION]);
 
+const ROBOT_STATES = new Set(["sleeping", "active"]);
+
+/**
+ * Checks that a face message's payload has the fields the face UI needs.
+ * Expression names are not checked here; the face falls back to Neutral for unknown names.
+ * @param {{ type: string, payload: object }} message - Output of parseMessage().
+ * @returns {boolean}
+ */
+export function isValidFacePayload(message) {
+  if (message.type === TYPES.ROBOT_STATE) {
+    return ROBOT_STATES.has(message.payload.state);
+  }
+  if (message.type === TYPES.ROBOT_EXPRESSION) {
+    return typeof message.payload.name === "string" && message.payload.name.trim() !== "";
+  }
+  return false;
+}
+
 /**
  * Creates a JSON message string with protocol version (v), unique ID (id), and timestamp (ts).
  * @param {string} type
