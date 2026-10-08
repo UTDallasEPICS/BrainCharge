@@ -57,10 +57,10 @@ export function useNanoEvents({ onRobotStateChange } = {}) {
         const state = message.payload?.state;
         if (state !== "sleeping" && state !== "active") return;
         setRobotState(state);
-        // An expression only lasts until the next state change.
-        setExpression(null);
+        // An expression only lasts until the state changes (a repeated state, e.g. a resync, keeps it).
         if (state !== lastState) {
           lastState = state;
+          setExpression(null);
           onStateChangeRef.current?.(state);
         }
       } else if (message.type === "robot.expression") {

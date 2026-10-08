@@ -50,8 +50,11 @@ export function addClient(res) {
 export function broadcast(message) {
   if (!message || !FACE_EVENT_TYPES.has(message.type)) return false;
 
-  // An expression only lasts until the next state change.
-  if (message.type === TYPES.ROBOT_STATE) latest.delete(TYPES.ROBOT_EXPRESSION);
+  // An expression only lasts until the state changes (a repeated state, e.g. a resync, keeps it).
+  const stateChanged =
+    message.type === TYPES.ROBOT_STATE &&
+    latest.get(TYPES.ROBOT_STATE)?.payload.state !== message.payload.state;
+  if (stateChanged) latest.delete(TYPES.ROBOT_EXPRESSION);
   latest.set(message.type, message);
 
   for (const res of clients) writeEvent(res, message);

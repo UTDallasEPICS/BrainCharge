@@ -12,6 +12,7 @@ from typing import Any
 
 # Component import
 from ioModules.audio import AudioService
+from ioModules.webapp import DisabledWebAppEvents, Expression, RobotState, WebAppEvents
 
 # Python imports
 from enum import Enum
@@ -29,18 +30,33 @@ class Orchestrator:
     individual services.
     """
 
-    def __init__(self, language: dict[str, Any], audio_service: AudioService) -> None:
+    def __init__(
+        self,
+        language: dict[str, Any],
+        audio_service: AudioService,
+        webapp: WebAppEvents | DisabledWebAppEvents,
+    ) -> None:
         self.audio_service = audio_service
+        self.webapp = webapp
         self.state = State.SLEEPING
         self.language = language
 
         self.wakeWord = language["wake_word"]
-        self.sleepWord = language["sleep_word"]
+        # Language files list several phrasings ("bye, companion" / "bye companion"); accept a single string too.
+        sleep_words = language["sleep_word"]
+        self.sleepWords = [sleep_words] if isinstance(sleep_words, str) else list(sleep_words)
+
+    def _change_state(self, new_state: State) -> None:
+        """Switch state and mirror it on the web app's face screen."""
+        self.state = new_state
+        self.webapp.send_state(RobotState.ACTIVE if new_state == State.ACTIVE else RobotState.SLEEPING)
 
     def startup(self):
         """Main control loop."""
         # This is somewhat ugly, need to come in and remove some indenting to make this look cleaner but that's
         # aesthetics stuff
+        self._change_state(State.SLEEPING)
+
         while self.state != State.EXIT:
 
             # (This segment is long and rambly and would probs be better served in a documentation document rather than a random comment)
@@ -66,19 +82,23 @@ class Orchestrator:
                     if self.wakeWord in transcript.casefold():
                         print(f'[Orchestrator-Sleep] "{self.wakeWord}" detected.')
 
-                        self.state = State.ACTIVE
+                        self._change_state(State.ACTIVE)
+                        self.webapp.send_expression(Expression.HAPPY)
                         self.audio_service.speak(self.language["greeting"], True)
 
                 case State.ACTIVE:
                     print(f"\n[Orchestrator-wake] Listening")
+                    self.webapp.send_expression(Expression.NEUTRAL)
                     transcript = self.audio_service.listen()
 
                     if transcript == "[BLANK_AUDIO]":
                         self.audio_service.speak(self.language["empty_response"])
-                    elif self.sleepWord in transcript.casefold():
+                    elif any(word in transcript.casefold() for word in self.sleepWords):
                         print(f"\n[Orchestrator-wake] Sleep word detected — ending session.")
 
-                        self.state = State.SLEEPING
+                        # Goodbye is said with the awake face; the face goes idle once it's done.
                         self.audio_service.speak(self.language["shutdown"], True)
+                        self._change_state(State.SLEEPING)
                     else:
+                        self.webapp.send_expression(Expression.THINKING)
                         print(f"[Orchestrator-wake] Placeholder print")
