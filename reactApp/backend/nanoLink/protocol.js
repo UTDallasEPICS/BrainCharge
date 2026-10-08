@@ -20,21 +20,25 @@ export const TYPES = {
 export const FACE_EVENT_TYPES = new Set([TYPES.ROBOT_STATE, TYPES.ROBOT_EXPRESSION]);
 
 const ROBOT_STATES = new Set(["sleeping", "active"]);
+const MAX_EXPRESSION_NAME_LENGTH = 32;
 
 /**
- * Checks that a face message's payload has the fields the face UI needs.
- * Expression names are not checked here; the face falls back to Neutral for unknown names.
+ * Rebuilds a face message's payload with only the fields the face UI uses,
+ * so extra fields (e.g. transcripts) can never leak onto the public face stream.
+ * Expression names are not checked against a list; the face falls back to Neutral for unknown names.
  * @param {{ type: string, payload: object }} message - Output of parseMessage().
- * @returns {boolean}
+ * @returns {object|null} The clean payload, or null if the required fields are missing/invalid.
  */
-export function isValidFacePayload(message) {
+export function toFacePayload(message) {
   if (message.type === TYPES.ROBOT_STATE) {
-    return ROBOT_STATES.has(message.payload.state);
+    const { state } = message.payload;
+    return ROBOT_STATES.has(state) ? { state } : null;
   }
   if (message.type === TYPES.ROBOT_EXPRESSION) {
-    return typeof message.payload.name === "string" && message.payload.name.trim() !== "";
+    const name = typeof message.payload.name === "string" ? message.payload.name.trim() : "";
+    return name && name.length <= MAX_EXPRESSION_NAME_LENGTH ? { name } : null;
   }
-  return false;
+  return null;
 }
 
 /**

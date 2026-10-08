@@ -1,7 +1,9 @@
 import { FACE_EVENT_TYPES, TYPES } from "./protocol.js";
 
-// Comment lines sent on this interval keep idle SSE connections from being closed by proxies/browsers.
-const HEARTBEAT_MS = 25_000;
+// A "ping" event on this interval keeps idle connections open and lets the browser detect
+// a dead stream (proxies like Vite's can keep the browser side open after the backend dies).
+// Clients treat ~3 missed pings as a dead stream, so keep this in sync with the frontend hook.
+const HEARTBEAT_MS = 15_000;
 // Tells EventSource how long to wait before reconnecting after a drop.
 const RECONNECT_MS = 3_000;
 
@@ -18,10 +20,9 @@ function writeEvent(res, message) {
 /**
  * Registers an SSE client: sends stream headers, replays the current face state,
  * and removes the client when the connection closes.
- * @param {import("express").Request} req
  * @param {import("express").Response} res
  */
-export function addClient(req, res) {
+export function addClient(res) {
   res.writeHead(200, {
     "Content-Type": "text/event-stream",
     "Cache-Control": "no-cache, no-transform",
@@ -37,7 +38,8 @@ export function addClient(req, res) {
   }
 
   clients.add(res);
-  req.on("close", () => clients.delete(res));
+  // Listen on res, not req: req "close" can fire once the request is read, not when the client leaves.
+  res.on("close", () => clients.delete(res));
 }
 
 /**
@@ -65,7 +67,8 @@ export function getStatus() {
 }
 
 const heartbeat = setInterval(() => {
-  for (const res of clients) res.write(": ping\n\n");
+  // Named event (not a comment) so EventSource exposes it to JS; it needs a data line to be dispatched.
+  for (const res of clients) res.write("event: ping\ndata: {}\n\n");
 }, HEARTBEAT_MS);
 // Don't keep the Node process alive just for the heartbeat.
 heartbeat.unref();

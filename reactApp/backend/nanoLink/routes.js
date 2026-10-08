@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import { Router } from "express";
 import { addClient, broadcast, getStatus } from "./hub.js";
-import { FACE_EVENT_TYPES, isValidFacePayload, parseMessage } from "./protocol.js";
+import { FACE_EVENT_TYPES, parseMessage, toFacePayload } from "./protocol.js";
 
 const router = Router();
 
@@ -29,8 +29,8 @@ function requireNanoToken(req, res, next) {
 
 // Face screen subscribes here. No login required: the face shows before sign-in and
 // this stream only carries robot.state / robot.expression (never transcripts).
-router.get("/api/nano/events", (req, res) => {
-  addClient(req, res);
+router.get("/api/nano/events", (_req, res) => {
+  addClient(res);
 });
 
 // The Nano posts one protocol message per face change.
@@ -42,11 +42,12 @@ router.post("/api/nano/event", requireNanoToken, (req, res) => {
   if (!FACE_EVENT_TYPES.has(message.type)) {
     return res.status(422).json({ error: `Type "${message.type}" is not allowed on the face stream` });
   }
-  if (!isValidFacePayload(message)) {
+  const payload = toFacePayload(message);
+  if (!payload) {
     return res.status(422).json({ error: `Invalid payload for "${message.type}"` });
   }
 
-  broadcast(message);
+  broadcast({ ...message, payload });
   return res.status(202).json({ ok: true, id: message.id });
 });
 
