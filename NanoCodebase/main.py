@@ -7,6 +7,7 @@ import shutil
 
 from app.orchestrator import Orchestrator
 from ioModules.audio import AudioService
+from ioModules.vision import VisionService
 
 def main() -> None:
     """
@@ -31,6 +32,11 @@ def main() -> None:
     piper_model_path:Path = next(language_dir.glob("*.onnx"))
     vosk_model_path:Path = next(language_dir.glob("vosk*"))
 
+    # TODO: Move CV models from "NanoCodebase\ioModules\vision\facial_recognition\models"
+    #       to "NanoCodebase\visionFiles" and change "opencv_models_path" below to use "visionFiles" path
+    # opencv_models_path:Path = Path("visionFiles")
+    opencv_models_path:Path = Path("ioModules", "vision", "facial_recognition", "models")
+
     temp_parent = (
         "/dev/shm"
         if system == "Linux" and os.path.isdir("/dev/shm")
@@ -48,9 +54,12 @@ def main() -> None:
             piper_model_path=piper_model_path,
         )
 
+        vision = VisionService(opencv_models_path=opencv_models_path)
+
         orchestrator = Orchestrator(
             language=language_phrases,
             audio_service=audio,
+            vision_service=vision,
         )
 
         orchestrator.startup()
