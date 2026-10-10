@@ -29,3 +29,6 @@ whisper.cpp/
 # --- Audio
 *.onnx*
 vosk*/
+
+# --- Vision
+known_faces/

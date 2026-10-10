@@ -7,14 +7,16 @@ communication between independent services.
 It should contain as little implementation logic as possible.
 Services perform work while the orchestrator decides when that work should occur.
 """
-import time
-from typing import Any
 
-# Component import
+# Component imports
 from ioModules.audio import AudioService
+from ioModules.vision import VisionService
 
 # Python imports
+import time
+import threading
 from enum import Enum
+from typing import Any
 
 class State(Enum):
     EXIT = -1
@@ -29,7 +31,7 @@ class Orchestrator:
     individual services.
     """
 
-    def __init__(self, language: dict[str, Any], audio_service: AudioService) -> None:
+    def __init__(self, language: dict[str, Any], audio_service: AudioService, vision_service: VisionService) -> None:
         self.audio_service = audio_service
         self.state = State.SLEEPING
         self.language = language
@@ -37,24 +39,10 @@ class Orchestrator:
         self.wakeWord = language["wake_word"]
         self.sleepWord = language["sleep_word"]
 
-    def startup(self):
-        """Main control loop."""
-        # This is somewhat ugly, need to come in and remove some indenting to make this look cleaner but that's
-        # aesthetics stuff
+        self.vision_service = vision_service
+
+    def audio_service_loop(self):
         while self.state != State.EXIT:
-
-            # (This segment is long and rambly and would probs be better served in a documentation document rather than a random comment)
-            # Move each state into their own static class?
-            # If we move each state into their own class, we could define a method like state_enter()/state_exit()
-            # which each state can run their own specific state code. With current approach, expanding to more states
-            # would be difficult as we would need to hardcode the exit & entry for each one on change, rather than
-            # one consolidated place.
-            # For now this is fine but if we expand to more states then we should consider a better approach.
-
-            # viable alt: change_state_enter(state) & change_state_exit(state)
-            #   function which just has a switch for each state and the code they want to do when starting.
-            #   Not the cleanest but cleaner then current
-
             match self.state:
                 case State.SLEEPING:
                     print("[Orchestrator-Sleep] Listening for wake word...")
@@ -82,3 +70,18 @@ class Orchestrator:
                         self.audio_service.speak(self.language["shutdown"], True)
                     else:
                         print(f"[Orchestrator-wake] Placeholder print")
+
+    def vision_service_loop(self):
+        self.vision_service.start_capture()
+
+        while self.state != State.EXIT:
+            if self.state == State.ACTIVE:
+                print("Vision service running")
+
+    def startup(self):
+        """Main control loop."""
+        audio_service_thread = threading.Thread(target=self.audio_service_loop)
+        vision_service_thread = threading.Thread(target=self.vision_service_loop)
+
+        audio_service_thread.start()
+        vision_service_thread.start()
