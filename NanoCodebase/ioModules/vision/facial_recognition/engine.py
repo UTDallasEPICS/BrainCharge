@@ -229,5 +229,39 @@ class FaceRecognitionEngine:
             )
         return out
 
+    """
+    bbox[x1, y1, x2, y2]: Bounding box of recognition
+    color[red, green, blue]: Color of bounding box and label
+    """
+    def annotate_face(
+        self,
+        bgr_frame: np.ndarray,
+        bbox: Tuple[int, int, int, int], 
+        label: str,
+        color: Tuple[int, int, int] = (40, 180, 60),
+    ) -> np.ndarray:
+        output = bgr_frame.copy()
+        (text_width, text_height), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.55, 2)
+
+        cv2.rectangle(output, (bbox[0], bbox[1]), (bbox[2], bbox[3]), color, 2)
+        cv2.rectangle(output,
+            (bbox[0], max(0, bbox[1] - text_height - 8)),
+            (bbox[0] + text_width + 6, bbox[1]),
+            color,
+            -1
+        )
+        cv2.putText(
+            output,
+            label,
+            (bbox[0] + 3, bbox[1] - 5),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.55,
+            (255, 255, 255),
+            2,
+            cv2.LINE_AA,
+        )
+
+        return output
+
     def known_names(self) -> List[str]:
         return list(self.gallery.names)
