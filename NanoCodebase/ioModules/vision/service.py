@@ -2,12 +2,15 @@
 High-level vision services.
 """
 
+from typing import List
+
 import cv2
 from pathlib import Path
 from warnings import warn
 
 from facial_recognition.camera import open_camera, read_latest_frame
-from facial_recognition.engine import FaceRecognitionEngine
+from facial_recognition.engine import FaceRecognitionEngine, Recognition
+from emotion_classification import EmotionClassifier
 
 class VisionService:
     """
@@ -30,6 +33,8 @@ class VisionService:
         self.engine = FaceRecognitionEngine()
         self.engine.initialize()
 
+        self.emotion_classifier = EmotionClassifier()
+
         self.test_mode = test_mode
         if test_mode:
             self.window = "Vision Service Test"
@@ -40,31 +45,37 @@ class VisionService:
     def start_capture(self):
         self.capture = open_camera()
 
-        cv2.namedWindow(self.window, cv2.WINDOW_NORMAL)
+        if self.test_mode:
+            cv2.namedWindow(self.window, cv2.WINDOW_NORMAL)
 
     """
     Capture and store a frame and its inference using the robot's camera.
     """
-    def capture_frame(self):
-        status, frame = read_latest_frame(self.capture)
-        if not status or frame is None:
+    def capture_frame(self, user: str = ""):
+        status, bgr_frame = read_latest_frame(self.capture)
+        if not status or bgr_frame is None:
             raise RuntimeError("Could not read camera capture")
 
-        results = self.engine.recognize(frame)
+        results = self.engine.recognize(bgr_frame)
+        recognition = None
+        for result in results:
+            if result.name == user:
+                recognition = result
+                break
+
+        if recognition is None:
+            return
+        
+        x1, y1, x2, y2 = recognition.bbox
+        rgb_frame = cv2.cvtColor(bgr_frame, cv2.COLOR_BGR2RGB)
+        face = rgb_frame[y1:y2, x1:x2]
+
+        emotions = self.emotion_classifier.predict_emotions(face)
+        print(emotions)
 
         if self.test_mode:
-            display = self.engine.annotate(frame, results)
-
-            cv2.putText(
-                display,
-                f"faces={len(results)}",
-                (10, display.shape[0] - 12),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                0.55,
-                (220, 220, 220),
-                1,
-                cv2.LINE_AA,
-            )
+            display = self.engine.annotate_face(bgr_frame, 
+                recognition.bbox, f"{user} ({recognition.confidence:.2f}) - {emotions[0]["emotion"]}")
             cv2.imshow(self.window, display)
 
     """

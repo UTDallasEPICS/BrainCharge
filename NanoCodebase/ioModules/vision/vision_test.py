@@ -8,7 +8,8 @@ vision_service = VisionService(models_path, True)
 vision_service.start_capture()
 
 for i in range(10):
-    vision_service.capture_frame()
+    vision_service.capture_frame("Test")
+    print("Frame", i + 1)
     cv2.waitKey(1000)
 
 vision_service.stop_capture()
