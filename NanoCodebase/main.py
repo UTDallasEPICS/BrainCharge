@@ -6,9 +6,9 @@ from tempfile import TemporaryDirectory
 import shutil
 
 from app.orchestrator import Orchestrator
+from app.webapp import DisabledWebAppEvents, RobotState, WebAppEvents
 from ioModules.audio import AudioService
 from ioModules.vision import VisionService
-from ioModules.webapp import DisabledWebAppEvents, RobotState, WebAppEvents
 
 # Web app backend on the same machine (reactApp/backend, default port 3001).
 DEFAULT_WEBAPP_URL = "http://127.0.0.1:3001/api/nano/event"

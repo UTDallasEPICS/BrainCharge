@@ -7,11 +7,10 @@ communication between independent services.
 It should contain as little implementation logic as possible.
 Services perform work while the orchestrator decides when that work should occur.
 """
-
 # Component imports
+from app.webapp import DisabledWebAppEvents, Expression, RobotState, WebAppEvents
 from ioModules.audio import AudioService
 from ioModules.vision import VisionService
-from ioModules.webapp import DisabledWebAppEvents, Expression, RobotState, WebAppEvents
 
 # Python imports
 import threading
