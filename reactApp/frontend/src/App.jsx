@@ -1,5 +1,7 @@
 import { useState, useEffect, lazy, Suspense } from "react";
 import { useSession, signOut } from "./lib/auth-client";
+import { useRobotMode } from "./context/robotModeContext.js";
+import RobotBootFace from "./face/RobotBootFace.jsx";
 import SplashScreen from "./screens/SplashScreen";
 import HomeScreen from "./screens/HomeScreen";
 import ScheduleScreen from "./screens/ScheduleScreen";
@@ -47,6 +49,7 @@ function RequireAuth({ session, isPending, children, message = "Signing you in..
 }
 
 export default function App() {
+  const { mode, goApp } = useRobotMode();
   const { data: session, isPending } = useSession();
   const [screen, setScreen] = useState("splash");
   const [allData, setAllData] = useState([]);
@@ -115,6 +118,11 @@ export default function App() {
     window.addEventListener("storage", loadData);
     return () => window.removeEventListener("storage", loadData);
   }, [screen]);
+
+  // Full-screen robot face (boot / idle). Must stay below every hook above.
+  if (mode === "face") {
+    return <RobotBootFace onDismiss={goApp} />;
+  }
 
   const hideNav = [
     "splash",
