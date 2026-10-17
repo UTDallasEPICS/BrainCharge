@@ -38,6 +38,11 @@ class Expression(StrEnum):
     NEUTRAL = "Neutral"
     HAPPY = "Happy"
     SURPRISED = "Surprised"
+    ANGRY = "Angry"
+    CONTEMPT = "Contempt"
+    DISGUST = "Disgust"
+    FEAR = "Fear"
+    SAD = "Sad"
     BLINK = "Blink"
     THINKING = "Thinking"
 
