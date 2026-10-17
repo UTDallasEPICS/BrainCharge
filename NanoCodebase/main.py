@@ -7,6 +7,7 @@ import shutil
 
 from app.orchestrator import Orchestrator
 from ioModules.audio import AudioService
+from ioModules.vision import VisionService
 from ioModules.webapp import DisabledWebAppEvents, RobotState, WebAppEvents
 
 # Web app backend on the same machine (reactApp/backend, default port 3001).
@@ -25,7 +26,6 @@ def create_webapp_events(webapp_config: dict | None) -> WebAppEvents | DisabledW
         print("[MAIN] Web app token is not set; face events will be rejected until it matches NANO_TOKEN in backend/.env")
 
     return WebAppEvents(url=webapp_config.get("url") or DEFAULT_WEBAPP_URL, token=token)
-
 
 def main() -> None:
     """
@@ -50,6 +50,11 @@ def main() -> None:
     piper_model_path:Path = next(language_dir.glob("*.onnx"))
     vosk_model_path:Path = next(language_dir.glob("vosk*"))
 
+    # TODO: Move CV models from "NanoCodebase\ioModules\vision\facial_recognition\models"
+    #       to "NanoCodebase\visionFiles" and change "opencv_models_path" below to use "visionFiles" path
+    # opencv_models_path:Path = Path("visionFiles")
+    opencv_models_path:Path = Path("ioModules", "vision", "facial_recognition", "models")
+
     temp_parent = (
         "/dev/shm"
         if system == "Linux" and os.path.isdir("/dev/shm")
@@ -67,11 +72,13 @@ def main() -> None:
             piper_model_path=piper_model_path,
         )
 
+        vision = VisionService(opencv_models_path=opencv_models_path)
         webapp = create_webapp_events(config.get("webapp"))
 
         orchestrator = Orchestrator(
             language=language_phrases,
             audio_service=audio,
+            vision_service=vision,
             webapp=webapp,
         )
 
