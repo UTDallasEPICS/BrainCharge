@@ -23,9 +23,9 @@ from typing import Dict, List, Optional, Sequence, Tuple
 import cv2
 import numpy as np
 
-from facial_recognition.config import IMAGE_EXTENSIONS
-from facial_recognition.detector import FaceDetector
-from facial_recognition.encoder import FaceEncoder
+from .config import IMAGE_EXTENSIONS
+from .detector import FaceDetector
+from .encoder import FaceEncoder
 
 
 @dataclass

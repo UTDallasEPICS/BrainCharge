@@ -8,7 +8,7 @@ from typing import Optional
 import cv2
 import numpy as np
 
-from facial_recognition.detector import FaceBox
+from .detector import FaceBox
 
 
 class FaceEncoder:

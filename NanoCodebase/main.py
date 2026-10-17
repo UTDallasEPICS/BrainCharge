@@ -43,6 +43,7 @@ def main() -> None:
         config = json.load(file)
 
     audio_config = config.get("audio", {})
+    vision_config = config.get("vision", {})
 
     language_dir = Path("languageFiles") / config.get("language", "en")
     with (language_dir / "config.json").open("r", encoding="utf-8") as file:
@@ -72,8 +73,12 @@ def main() -> None:
             piper_model_path=piper_model_path,
         )
 
-        vision = VisionService(opencv_models_path=opencv_models_path)
         webapp = create_webapp_events(config.get("webapp"))
+        vision = VisionService(
+            config=vision_config,
+            opencv_models_path=opencv_models_path,
+            test_mode=False,
+        )
 
         orchestrator = Orchestrator(
             language=language_phrases,

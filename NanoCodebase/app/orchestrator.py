@@ -48,12 +48,35 @@ class Orchestrator:
         sleep_words = language["sleep_word"]
         self.sleepWords = [sleep_words] if isinstance(sleep_words, str) else list(sleep_words)
 
+        self.vision_thread = None
+        self.vision_thread_stop_event = threading.Event()
+
     def _change_state(self, new_state: State) -> None:
         """Switch state and mirror it on the web app's face screen."""
         self.state = new_state
         self.webapp.send_state(RobotState.ACTIVE if new_state == State.ACTIVE else RobotState.SLEEPING)
 
-    def audio_service_loop(self):
+    def vision_thread_task(self, user: str, frames_per_second: float | None = None):
+        self.vision_service.start_capture()
+
+        if frames_per_second is None:
+            interval = 1 / self.vision_service.frames_per_second
+        else:
+            interval = 1 / frames_per_second
+
+        while not self.vision_thread_stop_event.is_set():
+            self.vision_service.capture_frame(user)
+            print(self.vision_service.get_latest_inference())
+
+            self.vision_service.delay_capture(int(interval * 1000))
+
+        self.vision_service.stop_capture()
+        self.vision_thread_stop_event.clear()
+
+    def startup(self):
+        """Main control loop."""
+        self._change_state(State.SLEEPING)
+
         while self.state != State.EXIT:
             match self.state:
                 case State.SLEEPING:
@@ -68,6 +91,15 @@ class Orchestrator:
 
                         self._change_state(State.ACTIVE)
                         self.webapp.send_expression(Expression.HAPPY)
+
+                        if self.vision_thread is None:
+                            self.vision_thread = threading.Thread(
+                                target=self.vision_thread_task,
+                                args=("Test", 2),
+                                daemon=True,
+                            )
+                            self.vision_thread.start()
+
                         self.audio_service.speak(self.language["greeting"], True)
 
                 case State.ACTIVE:
@@ -82,27 +114,13 @@ class Orchestrator:
 
                         # Goodbye is said with the awake face; the face goes idle once it's done.
                         self.audio_service.speak(self.language["shutdown"], True)
+
+                        if self.vision_thread is not None:
+                            self.vision_thread_stop_event.set()
+                            self.vision_thread.join()
+                            self.vision_thread = None
+
                         self._change_state(State.SLEEPING)
                     else:
                         self.webapp.send_expression(Expression.THINKING)
                         print(f"[Orchestrator-wake] Placeholder print")
-
-    def vision_service_loop(self):
-        self.vision_service.start_capture()
-
-        while self.state != State.EXIT:
-            if self.state == State.ACTIVE:
-                print("Vision service running")
-
-    def startup(self):
-        """Main control loop."""
-        self._change_state(State.SLEEPING)
-
-        audio_service_thread = threading.Thread(target=self.audio_service_loop, daemon=True)
-        vision_service_thread = threading.Thread(target=self.vision_service_loop, daemon=True)
-
-        audio_service_thread.start()
-        vision_service_thread.start()
-
-        # Block until the audio loop exits (Ctrl+C or State.EXIT).
-        audio_service_thread.join()
