@@ -2,21 +2,23 @@
 High-level vision services.
 """
 
-from typing import List
-
 import cv2
 from pathlib import Path
 from warnings import warn
+from typing import Any
 
-from facial_recognition.camera import open_camera, read_latest_frame
-from facial_recognition.engine import FaceRecognitionEngine, Recognition
-from emotion_classification import EmotionClassifier
+from .facial_recognition.camera import open_camera, read_latest_frame
+from .facial_recognition.engine import FaceRecognitionEngine
+from .emotion_classification import EmotionClassifier
+
+NUM_TOP_EMOTIONS = 3
+EMOTIONS_CONFIDENCE_THRESHOLD = 0.1
 
 class VisionService:
     """
     Capture and manage vision for the robot.
     """
-    def __init__(self, opencv_models_path: Path, test_mode: bool):
+    def __init__(self, config: dict[str, Any], opencv_models_path: Path, test_mode: bool):
         if (opencv_models_path):
             try:
                 if not opencv_models_path.is_dir():
@@ -30,10 +32,13 @@ class VisionService:
             except Exception as error:
                 warn(f"Could not initialize the OpenCV models: {error}")
 
+        self.frames_per_second = float(config.get("frames_per_second", 10))
+
         self.engine = FaceRecognitionEngine()
         self.engine.initialize()
 
         self.emotion_classifier = EmotionClassifier()
+        self.current_emotions = None
 
         self.test_mode = test_mode
         if test_mode:
@@ -43,18 +48,27 @@ class VisionService:
     Start vision capture using the robot's camera.
     """
     def start_capture(self):
-        self.capture = open_camera()
+        try:
+            self.capture = open_camera()
+        except:
+            print("Could not open camera")
 
         if self.test_mode:
             cv2.namedWindow(self.window, cv2.WINDOW_NORMAL)
 
     """
-    Capture and store a frame and its inference using the robot's camera.
+    Capture a frame using the robot's camera, and store its inference.
     """
     def capture_frame(self, user: str = ""):
         status, bgr_frame = read_latest_frame(self.capture)
         if not status or bgr_frame is None:
             raise RuntimeError("Could not read camera capture")
+
+        if user == "":
+            if self.test_mode:
+                cv2.imshow(self.window, bgr_frame)
+
+            return
 
         results = self.engine.recognize(bgr_frame)
         recognition = None
@@ -70,8 +84,8 @@ class VisionService:
         rgb_frame = cv2.cvtColor(bgr_frame, cv2.COLOR_BGR2RGB)
         face = rgb_frame[y1:y2, x1:x2]
 
-        emotions = self.emotion_classifier.predict_emotions(face)
-        print(emotions)
+        emotions = self.emotion_classifier.predict_emotions(face, NUM_TOP_EMOTIONS, EMOTIONS_CONFIDENCE_THRESHOLD)
+        self.current_emotions = emotions
 
         if self.test_mode:
             display = self.engine.annotate_face(bgr_frame, 
@@ -79,11 +93,17 @@ class VisionService:
             cv2.imshow(self.window, display)
 
     """
-    Return the last frame's inference captured by the robot's camera.
+    Return the inference of the last frame captured by the robot's camera.
     """
     def get_latest_inference(self):
-        pass
+        return self.current_emotions
 
+    def delay_capture(self, delay: int):
+        cv2.waitKey(delay)
+
+    """
+    Stop vision capture by the robot's camera.
+    """
     def stop_capture(self):
         self.capture.release()
 

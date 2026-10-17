@@ -22,10 +22,10 @@ from typing import Optional
 
 import cv2
 
-from facial_recognition.camera import open_camera
-from facial_recognition.config import DEFAULT_KNOWN_FACES_DIR, FRConfig
-from facial_recognition.engine import FaceRecognitionEngine
-from facial_recognition.gallery import scan_known_faces_dir
+from .camera import open_camera
+from .config import DEFAULT_KNOWN_FACES_DIR, FRConfig
+from .engine import FaceRecognitionEngine
+from .gallery import scan_known_faces_dir
 
 
 def print_status(known_faces_dir: Path) -> None:

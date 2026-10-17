@@ -5,7 +5,7 @@ from __future__ import annotations
 import urllib.request
 from pathlib import Path
 
-from facial_recognition.config import (
+from .config import (
     DEFAULT_MODELS_DIR,
     SFACE_FILENAME,
     SFACE_URL,

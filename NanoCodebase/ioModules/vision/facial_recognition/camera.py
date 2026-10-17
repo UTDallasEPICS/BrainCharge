@@ -6,7 +6,7 @@ from typing import Optional, Tuple
 
 import cv2
 
-from facial_recognition.config import system_name
+from .config import system_name
 
 
 def open_camera(

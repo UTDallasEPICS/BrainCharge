@@ -4,12 +4,13 @@ from pathlib import Path
 from service import VisionService
 
 models_path = Path("facial_recognition", "models")
-vision_service = VisionService(models_path, True)
+vision_service = VisionService({}, models_path, True)
 vision_service.start_capture()
 
-for i in range(10):
+for i in range(100):
     vision_service.capture_frame("Test")
-    print("Frame", i + 1)
-    cv2.waitKey(1000)
+    inference = vision_service.get_latest_inference()
+    print(inference)
+    cv2.waitKey(100)
 
 vision_service.stop_capture()
