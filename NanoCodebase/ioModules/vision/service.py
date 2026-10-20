@@ -88,6 +88,10 @@ class VisionService:
         emotions = self.emotion_classifier.predict_emotions(
             face, NUM_TOP_EMOTIONS, EMOTIONS_CONFIDENCE_THRESHOLD
         )
+        if not emotions:
+            self.current_emotions = None
+            return
+
         self.current_emotions = emotions
 
         if self.test_mode:

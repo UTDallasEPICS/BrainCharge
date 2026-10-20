@@ -8,6 +8,8 @@ version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
     { name = "hsemotion-onnx" },
+    { name = "numpy" },
+    { name = "opencv-python" },
     { name = "piper-tts" },
     { name = "pyaudio" },
     { name = "vosk" },
@@ -16,6 +18,8 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "hsemotion-onnx", specifier = ">=0.3.1" },
+    { name = "numpy", specifier = ">=2.5.2" },
+    { name = "opencv-python", specifier = ">=5.0.0.93" },
     { name = "piper-tts", specifier = "==1.8.0" },
     { name = "pyaudio", specifier = ">=0.2.14" },
     { name = "vosk", specifier = ">=0.3.45" },
