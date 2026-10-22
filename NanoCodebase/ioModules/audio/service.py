@@ -27,7 +27,7 @@ from warnings import warn
 from pyaudio import PyAudio, paInt16
 from piper import PiperVoice
 
-from . import backend
+from .processor import AudioEnhancer
 
 # Audio internal configs
 VAD_SAMPLE_RATE = 16000
@@ -69,10 +69,26 @@ class AudioService:
         self.whisper_binary = whisper_config["binary"]
         self.whisper_model = whisper_config["model"]
 
+        enhancement_config = config.get("enhancement", {})
+        self._enhancer = AudioEnhancer(enhancement_config)
+        self._barge_in = bool(enhancement_config.get("barge_in", True))
+        self._barge_in_threshold_db = float(enhancement_config.get("barge_in_threshold_db", -22))
+        self._barge_in_min_frames = int(enhancement_config.get("barge_in_min_frames", 6))
+        self._barge_in_warmup_seconds = float(
+            enhancement_config.get("barge_in_warmup_seconds", 0.4)
+        )
+        self.interrupt_event = threading.Event()
+        self._speaking = False
+        print(
+            "[Audio] Enhancement "
+            f"enabled={self._enhancer.enabled} "
+            f"NS={self._enhancer.noise_suppression} "
+            f"AEC={self._enhancer.echo_cancellation} "
+            f"barge_in={self._barge_in}"
+        )
+
         # If we have a vosk model specified then preform the setup for it
         if vosk_model_path:
-            self.interrupt_event = threading.Event()
-
             interrupt_config = config.get("interrupt", {})
             self._min_words = int(interrupt_config.get("minimum_words", 2))
             self._warmup_seconds = float(interrupt_config.get("warmup_seconds", 0.4))
@@ -120,6 +136,7 @@ class AudioService:
         stream = None
 
         try:
+            self._enhancer.reset()
             pa, stream = self._get_audio_input_stream()
 
             frames = []
@@ -140,6 +157,7 @@ class AudioService:
                 except Exception:
                     break
 
+                chunk = self._enhancer.process_nearend(chunk, apply_aec=False)
                 frames.append(chunk)
                 db = self._calculate_rms_db(chunk)
                 is_speech = db > silence_threshold_db
@@ -229,9 +247,26 @@ class AudioService:
         # look at streaming in piper doc (posted above where we init model)
         pa = PyAudio()
         stream = None
+        monitor = None
+        self.interrupt_event.clear()
+        self._speaking = True
+        self._enhancer.reset()
 
         try:
+            if (
+                not ignore_interrupt
+                and self._barge_in
+                and self._enhancer.enabled
+                and self._enhancer.echo_cancellation
+            ):
+                monitor = threading.Thread(target=self._barge_in_monitor, daemon=True)
+                monitor.start()
+
             for chunk in self._voice.synthesize(sentence):
+                if self.interrupt_event.is_set():
+                    print("  [Audio] TTS interrupted by barge-in")
+                    break
+
                 if stream is None:  # We only want to open 1 stream, but we want the data from chunk
                     stream = pa.open(
                         format=pa.get_format_from_width(chunk.sample_width),
@@ -240,8 +275,22 @@ class AudioService:
                         output=True,
                     )
 
-                stream.write(chunk.audio_int16_bytes)
+                audio = chunk.audio_int16_bytes
+                self._enhancer.feed_farend_int16(audio, chunk.sample_rate)
+
+                slice_bytes = max(
+                    chunk.sample_width * chunk.sample_channels * VAD_CHUNK_SIZE,
+                    chunk.sample_width * chunk.sample_channels,
+                )
+                for offset in range(0, len(audio), slice_bytes):
+                    if self.interrupt_event.is_set():
+                        print("  [Audio] TTS interrupted by barge-in")
+                        break
+                    stream.write(audio[offset : offset + slice_bytes])
         finally:
+            self._speaking = False
+            if monitor is not None:
+                monitor.join(timeout=1.0)
             if stream:
                 stream.stop_stream()
                 stream.close()
@@ -349,6 +398,54 @@ class AudioService:
         # Normalize to 16-bit range (max 32768) and convert to dB
         db = 20 * math.log10(rms / 32768.0)
         return db
+
+    def _barge_in_monitor(self) -> None:
+        """Listen during TTS, cancel speaker echo, and interrupt on real speech.
+
+        Acoustic echo cancellation uses the playback signal queued by speak().
+        Residual energy after AEC is treated as near-end speech (barge-in).
+        """
+        pa = None
+        stream = None
+        try:
+            pa, stream = self._get_audio_input_stream()
+            warmup_chunks = int(
+                VAD_SAMPLE_RATE * self._barge_in_warmup_seconds / VAD_CHUNK_SIZE
+            )
+            speech_run = 0
+            chunk_index = 0
+
+            while self._speaking and not self.interrupt_event.is_set():
+                try:
+                    chunk = stream.read(VAD_CHUNK_SIZE, exception_on_overflow=False)
+                except Exception:
+                    break
+
+                cleaned = self._enhancer.process_nearend(chunk, apply_aec=True)
+                chunk_index += 1
+                if chunk_index <= warmup_chunks:
+                    continue
+
+                db = self._calculate_rms_db(cleaned)
+                if db > self._barge_in_threshold_db:
+                    speech_run += 1
+                else:
+                    speech_run = 0
+
+                if speech_run >= self._barge_in_min_frames:
+                    print(
+                        f"  [Audio] Barge-in after AEC ({db:.1f} dBFS) — stopping TTS."
+                    )
+                    self.interrupt_event.set()
+                    break
+        except Exception as error:
+            print(f"[Audio] Barge-in monitor error: {error}")
+        finally:
+            if stream:
+                stream.stop_stream()
+                stream.close()
+            if pa:
+                pa.terminate()
 
     def _vosk_echo_monitor(self, tts_process, expected_sentence: str):
         """Monitor microphone input while TTS is playing and interrupt on speech.

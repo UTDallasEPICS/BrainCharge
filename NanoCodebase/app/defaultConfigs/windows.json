@@ -13,6 +13,18 @@
       "minimum_words": 2,
       "warmup_seconds": 0.4,
       "echo_similarity_threshold": 0.55
+    },
+
+    "enhancement": {
+      "enabled": true,
+      "noise_suppression": true,
+      "echo_cancellation": true,
+      "barge_in": true,
+      "noise_reduction_strength": 0.8,
+      "aec_filter_length": 512,
+      "barge_in_threshold_db": -22,
+      "barge_in_min_frames": 6,
+      "barge_in_warmup_seconds": 0.4
     }
   }
 }
