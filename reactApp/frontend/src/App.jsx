@@ -1,3 +1,4 @@
+import { useLanguage } from "./i18n/language.js";
 import { useState, useEffect, lazy, Suspense } from "react";
 import { useSession, signOut } from "./lib/auth-client";
 import { useRobotMode } from "./context/robotModeContext.js";
@@ -18,11 +19,12 @@ import NotificationCenter from "./components/NotificationCenter";
 import "./styles/global.css";
 
 function CalendarLoading() {
+  const { t } = useLanguage();
   return (
     <div className="calendar-screen calendar-loading-screen">
       <div className="calendar-header">
-        <h1>Calendar</h1>
-        <p>Loading calendar view...</p>
+        <h1>{t("Calendar")}</h1>
+        <p>{t("Loading calendar view...")}</p>
       </div>
     </div>
   );
@@ -35,9 +37,10 @@ const CalendarScreen = lazy(() =>
 const PUBLIC_SCREENS = new Set(["splash", "sign-in", "make-account"]);
 
 function AuthLoading({ message = "Loading..." }) {
+  const { t } = useLanguage();
   return (
     <div className="app-shell auth-loading">
-      <p>{message}</p>
+      <p>{t(message)}</p>
     </div>
   );
 }

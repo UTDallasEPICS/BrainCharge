@@ -1,7 +1,9 @@
+import { useLanguage } from "../i18n/language.js";
 import { useState } from "react";
 import "../styles/connection.css";
 
 export default function ConnectionScreen({ navigate }) {
+  const { t } = useLanguage();
   const [isSearching, setIsSearching] = useState(false);
   const [status, setStatus] = useState("Disconnected");
 
@@ -25,8 +27,8 @@ export default function ConnectionScreen({ navigate }) {
             <polyline points="15 18 9 12 15 6"/>
           </svg>
         </button>
-        <h1>Device Connection</h1>
-        <p>Connect your User's Companion device via Bluetooth.</p>
+        <h1>{t("Device Connection")}</h1>
+        <p>{t("Connect your User's Companion device via Bluetooth.")}</p>
       </div>
 
       {/* ── Body ── */}
@@ -37,7 +39,7 @@ export default function ConnectionScreen({ navigate }) {
               <path d="M5 12.55a11 11 0 0114.08 0M1.42 9a16 16 0 0121.16 0M8.53 16.11a6 6 0 016.95 0M12 20h.01" />
             </svg>
           </div>
-          <h2 className="status-text">{isSearching ? "Scanning..." : "Ready to Pair"}</h2>
+          <h2 className="status-text">{isSearching ? "Scanning..." : t("Ready to Pair")}</h2>
           <p className="status-subtext">{status}</p>
         </div>
 
@@ -55,19 +57,19 @@ export default function ConnectionScreen({ navigate }) {
           {isSearching ? (
             <span className="spinner-row">
               <div className="spinner"></div>
-              Searching...
+              {t("Searching...")}
             </span>
           ) : (
-            "Search for Bluetooth Device"
+            t("Search for Bluetooth Device")
           )}
         </button>
 
         <div className="conn-help">
-          <h3>Trouble connecting?</h3>
+          <h3>{t("Trouble connecting?")}</h3>
           <ul>
-            <li>Keep the device within 3 feet of your phone.</li>
-            <li>Check that Bluetooth is enabled in your phone settings.</li>
-            <li>Ensure the device has at least 20% battery.</li>
+            <li>{t("Keep the device within 3 feet of your phone.")}</li>
+            <li>{t("Check that Bluetooth is enabled in your phone settings.")}</li>
+            <li>{t("Ensure the device has at least 20% battery.")}</li>
           </ul>
         </div>
       </div>

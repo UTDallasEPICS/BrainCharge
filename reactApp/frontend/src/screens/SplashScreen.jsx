@@ -1,6 +1,8 @@
+import { useLanguage } from "../i18n/language.js";
 import "../styles/splash.css";
 
 export default function SplashScreen({ navigate }) {
+  const { t } = useLanguage();
   return (
     <div className="splash">
       <div className="splash-icon">
@@ -12,13 +14,13 @@ export default function SplashScreen({ navigate }) {
         </svg>
       </div>
       <h1 className="splash-title">BrainCharge</h1>
-      <p className="splash-subtitle">Support when you need it most</p>
+      <p className="splash-subtitle">{t("Support when you need it most")}</p>
       <div className="splash-actions">
         <button className="btn-primary" onClick={() => navigate("sign-in")}>
-          Sign In
+          {t("Sign In")}
         </button>
         <button className="btn-outline" onClick={() => navigate("make-account")}>
-          Get Started
+          {t("Get Started")}
         </button>
       </div>
     </div>

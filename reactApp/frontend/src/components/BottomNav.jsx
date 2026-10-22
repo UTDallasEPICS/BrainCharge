@@ -1,3 +1,4 @@
+import { useLanguage } from "../i18n/language.js";
 import "./bottomnav.css";
 
 const navItems = [
@@ -78,6 +79,7 @@ const navItems = [
 ];
 
 export default function BottomNav({ active, navigate }) {
+  const { t } = useLanguage();
   return (
     <nav className="bottom-nav">
       {navItems.map((item) => (
@@ -87,7 +89,7 @@ export default function BottomNav({ active, navigate }) {
           onClick={() => navigate(item.id)}
         >
           {item.icon(active === item.id)}
-          <span>{item.label}</span>
+          <span>{t(item.label)}</span>
         </button>
       ))}
     </nav>

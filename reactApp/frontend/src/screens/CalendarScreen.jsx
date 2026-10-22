@@ -1,13 +1,17 @@
+import { useLanguage } from "../i18n/language.js";
 import { useState, useEffect, useCallback } from "react";
 import { Calendar, dateFnsLocalizer } from "react-big-calendar";
 import { format, startOfWeek, getDay, addMonths, subMonths } from "date-fns";
 import enUS from "date-fns/locale/en-US";
+import fr from "date-fns/locale/fr";
+import es from "date-fns/locale/es";
+import de from "date-fns/locale/de";
 import { listEvents, deleteEvent } from "../api/calendar";
 import { appEventToCalendarEvent, slotToFormDefaults } from "../utils/calendarEvents";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import "../styles/calendar.css";
 
-const locales = { "en-US": enUS };
+const locales = { "en-US": enUS, fr, es, de };
 const localizer = dateFnsLocalizer({ format, startOfWeek, getDay, locales });
 
 function isValidCalendarEvent(event) {
@@ -20,6 +24,9 @@ function isValidCalendarEvent(event) {
 }
 
 export default function CalendarScreen({ navigate, onEditAppointment, onAddAppointment }) {
+  const { t, language } = useLanguage();
+  const culture = language === "en" ? "en-US" : language;
+  const dateLocale = locales[culture] || enUS;
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -86,13 +93,13 @@ export default function CalendarScreen({ navigate, onEditAppointment, onAddAppoi
   return (
     <div className="calendar-screen">
       <div className="calendar-header">
-        <button className="back-btn-simple" onClick={() => navigate("home")} aria-label="Go back">
+        <button className="back-btn-simple" onClick={() => navigate("home")} aria-label={t("Go back")}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <polyline points="15 18 9 12 15 6" />
           </svg>
         </button>
-        <h1>Calendar</h1>
-        <p>View and manage care events on a calendar grid. Synced with Google Calendar.</p>
+        <h1>{t("Calendar")}</h1>
+        <p>{t("View and manage care events on a calendar grid. Synced with Google Calendar.")}</p>
       </div>
 
       <div className="calendar-body">
@@ -101,20 +108,21 @@ export default function CalendarScreen({ navigate, onEditAppointment, onAddAppoi
             <line x1="12" y1="5" x2="12" y2="19" />
             <line x1="5" y1="12" x2="19" y2="12" />
           </svg>
-          Add Appointment
+          {t("Add Appointment")}
         </button>
 
         {error && (
           <div className="calendar-error">
             <p>{error}</p>
-            <button type="button" className="retry-btn" onClick={loadEvents}>Retry</button>
+            <button type="button" className="retry-btn" onClick={loadEvents}>{t("Retry")}</button>
           </div>
         )}
 
         <div className={`calendar-widget ${loading ? "loading" : ""}`}>
           <Calendar
             localizer={localizer}
-            culture="en-US"
+            culture={culture}
+            messages={{ today: t("Today"), previous: t("Previous"), next: t("Next"), month: t("Month"), week: t("Week"), day: t("Day"), agenda: t("Agenda"), date: t("Date"), time: t("Time"), event: t("Event"), allDay: t("All day"), noEventsInRange: t("No events in range."), showMore: (count) => t("+ {count} more", { count }) }}
             events={events}
             startAccessor="start"
             endAccessor="end"
@@ -134,10 +142,10 @@ export default function CalendarScreen({ navigate, onEditAppointment, onAddAppoi
             toolbar
             style={{ height: currentView === "agenda" ? 400 : 340 }}
           />
-          {loading && <div className="calendar-loading-overlay">Loading events...</div>}
+          {loading && <div className="calendar-loading-overlay">{t("Loading events...")}</div>}
         </div>
 
-        <p className="calendar-hint">Tap a day to add an event. Tap an event to view, edit, or remove it.</p>
+        <p className="calendar-hint">{t("Tap a day to add an event. Tap an event to view, edit, or remove it.")}</p>
       </div>
 
       {selectedEvent && (
@@ -146,8 +154,8 @@ export default function CalendarScreen({ navigate, onEditAppointment, onAddAppoi
             <h3>{selectedEvent.title}</h3>
             <p className="event-modal-time">
               {selectedEvent.allDay
-                ? format(selectedEvent.start, "MMM d, yyyy")
-                : `${format(selectedEvent.start, "MMM d, yyyy · h:mm a")} – ${format(selectedEvent.end, "h:mm a")}`}
+                ? format(selectedEvent.start, "PP", { locale: dateLocale })
+                : `${format(selectedEvent.start, "PP · p", { locale: dateLocale })} – ${format(selectedEvent.end, "p", { locale: dateLocale })}`}
             </p>
             {selectedEvent.resource?.note && <p className="event-modal-note">{selectedEvent.resource.note}</p>}
             <div className="event-modal-actions">
@@ -156,12 +164,12 @@ export default function CalendarScreen({ navigate, onEditAppointment, onAddAppoi
                 setSelectedEvent(null);
                 onEditAppointment(appointment);
               }}>
-                Edit
+                {t("Edit")}
               </button>
               <button type="button" className="modal-btn delete" onClick={handleDeleteSelected} disabled={deletingId === selectedEvent.id}>
-                {deletingId === selectedEvent.id ? "Removing..." : "Remove"}
+                {deletingId === selectedEvent.id ? t("Removing...") : t("Remove")}
               </button>
-              <button type="button" className="modal-btn cancel" onClick={() => setSelectedEvent(null)}>Close</button>
+              <button type="button" className="modal-btn cancel" onClick={() => setSelectedEvent(null)}>{t("Close")}</button>
             </div>
           </div>
         </div>
