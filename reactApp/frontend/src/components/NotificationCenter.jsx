@@ -1,9 +1,11 @@
+import { useLanguage } from "../i18n/language.js";
 import { useEffect, useRef, useState } from "react";
 import { useNotifications } from "../hooks/useNotifications";
 import { groupNotifications } from "../utils/notifications";
 import "../styles/notifications.css";
 
 export default function NotificationCenter({ navigate }) {
+  const { t } = useLanguage();
   const [open, setOpen] = useState(false);
   const panelRef = useRef(null);
   const {
@@ -43,7 +45,7 @@ export default function NotificationCenter({ navigate }) {
         <button
           type="button"
           className="notification-bell"
-          aria-label="Notifications"
+          aria-label={t("Notifications")}
           aria-expanded={open}
           onClick={() => setOpen((prev) => !prev)}
         >
@@ -59,15 +61,15 @@ export default function NotificationCenter({ navigate }) {
         {open && (
           <div className="notification-panel">
             <div className="notification-panel-header">
-              <h2>Notifications</h2>
+              <h2>{t("Notifications")}</h2>
               <button type="button" className="notification-refresh" onClick={refresh}>
-                Refresh
+                {t("Refresh")}
               </button>
             </div>
 
             {!enabled && (
               <p className="notification-disabled">
-                Notifications are off. Enable them in Settings.
+                {t("Notifications are off. Enable them in Settings.")}
               </p>
             )}
 
@@ -76,12 +78,12 @@ export default function NotificationCenter({ navigate }) {
             )}
 
             {loading ? (
-              <p className="notification-empty">Loading...</p>
+              <p className="notification-empty">{t("Loading...")}</p>
             ) : groups.length === 0 ? (
               <p className="notification-empty">
                 {enabled
-                  ? "Nothing due soon. You're all caught up."
-                  : "Turn on notifications in Settings to see upcoming alerts."}
+                  ? t("Nothing due soon. You're all caught up.")
+                  : t("Turn on notifications in Settings to see upcoming alerts.")}
               </p>
             ) : (
               groups.map((group) => (

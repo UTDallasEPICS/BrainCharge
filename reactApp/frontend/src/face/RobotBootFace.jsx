@@ -1,3 +1,4 @@
+import { useLanguage } from "../i18n/language.js";
 import { useEffect, useMemo, useState } from "react";
 import {
   ACCENT_COLOR,
@@ -91,6 +92,7 @@ function Mouth({ type, color }) {
  * - playIdle: when true, cycles IDLE_SCRIPT expressions on a timer
  */
 export default function RobotBootFace({ onDismiss, playIdle = true }) {
+  const { t } = useLanguage();
   // Validated idle steps (an empty / fully-invalid script leaves the face on Neutral).
   const script = useMemo(() => sanitizeIdleScript(IDLE_SCRIPT), []);
   const isAnimating = playIdle && script.length > 0;
@@ -131,7 +133,7 @@ export default function RobotBootFace({ onDismiss, playIdle = true }) {
       className="robot-boot-face"
       role="button"
       tabIndex={0}
-      aria-label="Robot face. Tap to open the app."
+      aria-label={t("Robot face. Tap to open the app.")}
       onPointerUp={handleDismiss}
       onKeyDown={(event) => {
         if (event.key === "Enter" || event.key === " ") handleDismiss(event);
@@ -193,7 +195,7 @@ export default function RobotBootFace({ onDismiss, playIdle = true }) {
       </svg>
 
       {/* Visual cue only — pointer-events disabled in CSS so taps still hit the parent */}
-      <p className="robot-boot-face__hint">Tap anywhere to continue</p>
+      <p className="robot-boot-face__hint">{t("Tap anywhere to continue")}</p>
     </div>
   );
 }

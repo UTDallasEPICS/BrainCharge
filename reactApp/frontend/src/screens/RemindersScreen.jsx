@@ -1,3 +1,4 @@
+import { useLanguage } from "../i18n/language.js";
 import { useState, useEffect } from "react";
 import "../styles/reminders.css";
 
@@ -11,6 +12,7 @@ function HeartIcon() {
 }
 
 export default function RemindersScreen({ navigate }) {
+  const { t } = useLanguage();
   const [reminders, setReminders] = useState([]);
 
   useEffect(() => {
@@ -35,8 +37,8 @@ export default function RemindersScreen({ navigate }) {
             <polyline points="15 18 9 12 15 6"/>
           </svg>
         </button>
-        <h1>Self-Care Reminders</h1>
-        <p><strong>Caretaker:</strong> Don't forget to take care of yourself today.</p>
+        <h1>{t("Self-Care Reminders")}</h1>
+        <p><strong>{t("Caretaker:")}</strong> {t("Don't forget to take care of yourself today.")}</p>
       </div>
 
       {/* ── Body ── */}
@@ -45,10 +47,10 @@ export default function RemindersScreen({ navigate }) {
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5">
             <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
           </svg>
-          Add Self-Care Task
+          {t("Add Self-Care Task")}
         </button>
 
-        <h2 className="section-title">My Well-being</h2>
+        <h2 className="section-title">{t("My Well-being")}</h2>
 
         <div className="rem-list">
           {reminders.map((r) => (
@@ -70,7 +72,7 @@ export default function RemindersScreen({ navigate }) {
               <button 
                 className="delete-reminder-btn" 
                 onClick={() => deleteReminder(r.id)}
-                title="Delete Reminder"
+                title={t("Delete Reminder")}
               >
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ff4d4d" strokeWidth="2">
                   <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M9 6V4h6v2"/>
@@ -82,8 +84,8 @@ export default function RemindersScreen({ navigate }) {
           {reminders.length === 0 && (
             <div className="empty-state-container">
               <p className="empty-state-text">
-                No self-care reminders set. <br/>
-                Remember, you can't pour from an empty cup!
+                {t("No self-care reminders set.")} <br/>
+                {t("Remember, you can't pour from an empty cup!")}
               </p>
             </div>
           )}
