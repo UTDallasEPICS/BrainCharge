@@ -1,9 +1,9 @@
 import cv2
 from pathlib import Path
 
-from service import VisionService
+from .service import VisionService
 
-models_path = Path("facial_recognition", "models")
+models_path = Path(__file__).resolve().parent / "facial_recognition" / "models"
 vision_service = VisionService({}, models_path, True)
 vision_service.start_capture()
 

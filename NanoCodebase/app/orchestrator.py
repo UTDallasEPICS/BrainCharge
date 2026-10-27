@@ -11,7 +11,6 @@ Services perform work while the orchestrator decides when that work should occur
 # Component imports
 from ioModules.audio import AudioService
 from ioModules.vision import VisionService
-from conversationModules.llm.module import LLMModule
 
 # Python imports
 import time
@@ -42,8 +41,6 @@ class Orchestrator:
         self.audio_thread = None
         self.state = State.SLEEPING
         self.language = language
-
-        self.llm = LLMModule()
 
         self.wakeWord = language["wake_word"]
         self.sleepWord = language["sleep_word"]
@@ -83,7 +80,6 @@ class Orchestrator:
                         print(f'[Orchestrator-Sleep] "{self.wakeWord}" detected.')
 
                         self.state = State.ACTIVE
-                        self.llm.startup()
                         self.audio_service.speak(self.language["greeting"], True)
 
                 case State.ACTIVE:
@@ -101,12 +97,6 @@ class Orchestrator:
 
                         self.state = State.SLEEPING
                         self.audio_service.speak(self.language["shutdown"], True)
-                        self.llm.shutdown()
-                    else:
-                        # print(f"[Orchestrator-wake] Placeholder print")
-                        reply = self.llm.generate(transcript)
-                        print(f"[Orchestrator-wake] LLM response: {reply}")
-                        self.audio_service.speak(reply)
 
     def vision_service_loop(self, user: str, frames_per_second: float):
         self.vision_service.start_capture()
@@ -143,7 +133,6 @@ class Orchestrator:
         if self.audio_thread is not None and self.audio_thread.is_alive():
             self.audio_thread.join()
 
-        self.llm.shutdown()
         self.audio_service.cleanup()
 
     def shutdown_vision_service(self):
