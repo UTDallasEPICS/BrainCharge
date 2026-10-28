@@ -23,6 +23,9 @@ htmlcov/
 
 userConfig.json
 
+# --- Local conversation history (including SQLite journal files) ---
+NanoCodebase/data/
+
 # --- Whisper.cpp (model & Binary — see README.md §2 / JETSON_SETUP.md §5.3) ---
 whisper.cpp/
 
