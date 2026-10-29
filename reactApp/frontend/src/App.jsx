@@ -52,7 +52,7 @@ function RequireAuth({ session, isPending, children, message = "Signing you in..
 }
 
 export default function App() {
-  const { mode, goApp } = useRobotMode();
+  const { mode, goApp, robotState, robotExpression } = useRobotMode();
   const { data: session, isPending } = useSession();
   const [screen, setScreen] = useState("splash");
   const [allData, setAllData] = useState([]);
@@ -124,7 +124,14 @@ export default function App() {
 
   // Full-screen robot face (boot / idle). Must stay below every hook above.
   if (mode === "face") {
-    return <RobotBootFace onDismiss={goApp} />;
+    // Idle animation only while the robot is asleep or offline; awake, it holds the Nano's expression.
+    return (
+      <RobotBootFace
+        onDismiss={goApp}
+        playIdle={robotState !== "active"}
+        expressionOverride={robotExpression}
+      />
+    );
   }
 
   const hideNav = [

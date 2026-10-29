@@ -36,6 +36,12 @@ export const EXPRESSIONS = {
   Neutral: { ...NEUTRAL_EXPRESSION },
   Happy: { eye_w: 90, eye_h: 40, eyebrow_angle: 0, mouth: "smile" },
   Surprised: { eye_w: 60, eye_h: 90, eyebrow_angle: 0, mouth: "open" },
+  // CV emotion set (HSEmotion enet_b2_8) beyond Happy / Neutral / Surprise
+  Angry: { eye_w: 85, eye_h: 35, eyebrow_angle: -18, mouth: "frown" },
+  Contempt: { eye_w: 78, eye_h: 42, eyebrow_angle: -8, mouth: "flat" },
+  Disgust: { eye_w: 82, eye_h: 38, eyebrow_angle: -14, mouth: "frown" },
+  Fear: { eye_w: 70, eye_h: 95, eyebrow_angle: 20, mouth: "open" },
+  Sad: { eye_w: 88, eye_h: 45, eyebrow_angle: -12, mouth: "frown" },
   // Idle-only helpers using the same geometry language
   Blink: { eye_w: 88, eye_h: 4, eyebrow_angle: 0, mouth: "flat" }, // nearly closed lids
   Thinking: { eye_w: 72, eye_h: 48, eyebrow_angle: 12, mouth: "flat" }, // brows up a bit

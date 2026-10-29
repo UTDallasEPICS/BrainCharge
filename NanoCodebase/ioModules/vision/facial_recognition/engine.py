@@ -15,11 +15,11 @@ from typing import List, Optional, Sequence, Tuple
 import cv2
 import numpy as np
 
-from facial_recognition.config import FRConfig
-from facial_recognition.detector import FaceBox, FaceDetector
-from facial_recognition.encoder import FaceEncoder
-from facial_recognition.gallery import Gallery, load_or_build_gallery
-from facial_recognition.models_setup import ensure_models
+from .config import FRConfig
+from .detector import FaceBox, FaceDetector
+from .encoder import FaceEncoder
+from .gallery import Gallery, load_or_build_gallery
+from .models_setup import ensure_models
 
 
 @dataclass(frozen=True)

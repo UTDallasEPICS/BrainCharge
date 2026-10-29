@@ -18,9 +18,9 @@ from typing import Optional
 
 import cv2
 
-from facial_recognition.camera import open_camera, read_latest_frame
-from facial_recognition.config import DEFAULT_KNOWN_FACES_DIR, FRConfig
-from facial_recognition.engine import FaceRecognitionEngine
+from .camera import open_camera, read_latest_frame
+from .config import DEFAULT_KNOWN_FACES_DIR, FRConfig
+from .engine import FaceRecognitionEngine
 
 
 def build_arg_parser() -> argparse.ArgumentParser:
