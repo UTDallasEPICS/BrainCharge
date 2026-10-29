@@ -6,26 +6,8 @@ from tempfile import TemporaryDirectory
 import shutil
 
 from app.orchestrator import Orchestrator
-from app.webapp import DisabledWebAppEvents, RobotState, WebAppEvents
 from ioModules.audio import AudioService
 from ioModules.vision import VisionService
-
-# Web app backend on the same machine (reactApp/backend, default port 3001).
-DEFAULT_WEBAPP_URL = "http://127.0.0.1:3001/api/nano/event"
-
-
-def create_webapp_events(webapp_config: dict | None) -> WebAppEvents | DisabledWebAppEvents:
-    """Build the web app link from the "webapp" config section (disabled if missing or off)."""
-    if not webapp_config or not webapp_config.get("enabled", False):
-        print('[MAIN] Web app face link disabled (enable it in the "webapp" section of userConfig.json)')
-        return DisabledWebAppEvents()
-
-    # NANO_TOKEN env var wins so the token can stay out of config files; must match backend/.env.
-    token = os.environ.get("NANO_TOKEN") or webapp_config.get("token", "")
-    if not token or token == "change-me":
-        print("[MAIN] Web app token is not set; face events will be rejected until it matches NANO_TOKEN in backend/.env")
-
-    return WebAppEvents(url=webapp_config.get("url") or DEFAULT_WEBAPP_URL, token=token)
 
 def main() -> None:
     """
@@ -73,7 +55,6 @@ def main() -> None:
             piper_model_path=piper_model_path,
         )
 
-        webapp = create_webapp_events(config.get("webapp"))
         vision = VisionService(
             config=vision_config,
             opencv_models_path=opencv_models_path,
@@ -84,15 +65,9 @@ def main() -> None:
             language=language_phrases,
             audio_service=audio,
             vision_service=vision,
-            webapp=webapp,
         )
 
-        try:
-            orchestrator.startup()
-        finally:
-            # Return the face to idle when the robot stops (including Ctrl+C).
-            webapp.send_state(RobotState.SLEEPING)
-            webapp.close()
+        orchestrator.startup()
 
 if __name__ == "__main__":
     main()
