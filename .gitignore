@@ -32,3 +32,9 @@ vosk*/
 
 # --- Vision
 known_faces/
+# Generated face-embedding cache (keep cache/.gitkeep)
+**/facial_recognition/cache/*
+!**/facial_recognition/cache/.gitkeep
+# Downloaded YuNet / SFace ONNX models (keep models/.gitkeep)
+**/facial_recognition/models/*
+!**/facial_recognition/models/.gitkeep

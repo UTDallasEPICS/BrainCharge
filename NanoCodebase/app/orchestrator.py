@@ -49,26 +49,11 @@ class Orchestrator:
         self.sleepWord = language["sleep_word"]
 
         self.vision_service = vision_service
-        self.vision_thread = None
-        self.vision_thread_stop_event = threading.Event()
 
     def audio_service_loop(self):
         # This is somewhat ugly, need to come in and remove some indenting to make this look cleaner but that's
         # aesthetics stuff
         while self.state != State.EXIT:
-
-            # (This segment is long and rambly and would probs be better served in a documentation document rather than a random comment)
-            # Move each state into their own static class?
-            # If we move each state into their own class, we could define a method like state_enter()/state_exit()
-            # which each state can run their own specific state code. With current approach, expanding to more states
-            # would be difficult as we would need to hardcode the exit & entry for each one on change, rather than
-            # one consolidated place.
-            # For now this is fine but if we expand to more states then we should consider a better approach.
-
-            # viable alt: change_state_enter(state) & change_state_exit(state)
-            #   function which just has a switch for each state and the code they want to do when starting.
-            #   Not the cleanest but cleaner then current
-
             match self.state:
                 case State.SLEEPING:
                     print("[Orchestrator-Sleep] Listening for wake word...")
@@ -96,7 +81,7 @@ class Orchestrator:
 
                     if transcript == "[BLANK_AUDIO]":
                         self.audio_service.speak(self.language["empty_response"])
-                    elif any(word.casefold() in transcript.casefold() for word in self.sleepWord):
+                    elif self.sleepWord in transcript.casefold():
                         print(f"\n[Orchestrator-wake] Sleep word detected — ending session.")
 
                         self.state = State.SLEEPING

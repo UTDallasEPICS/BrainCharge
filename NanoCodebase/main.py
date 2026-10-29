@@ -59,19 +59,13 @@ def main() -> None:
         test_mode=False,
     )
 
-    orchestrator = Orchestrator(
-        language=language_phrases,
-        audio_service=audio,
-        vision_service=vision
-    )
-    orchestrator.startup()
-    try:
-        if orchestrator.audio_thread is not None:
-            orchestrator.audio_thread.join()
-    except KeyboardInterrupt:
-        print("\n[MAIN] Shutdown requested.")
-    finally:
-        orchestrator.shutdown()
+        orchestrator = Orchestrator(
+            language=language_phrases,
+            audio_service=audio,
+            vision_service=vision,
+        )
+
+        orchestrator.startup()
 
 if __name__ == "__main__":
     main()

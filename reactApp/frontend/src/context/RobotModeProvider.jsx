@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { RobotModeContext } from "./robotModeContext.js";
+import { useNanoEvents } from "../nanoLink/useNanoEvents.js";
 
 // How long the user can sit idle in the app before we auto-return to the face screen.
 const INACTIVITY_MS = 60_000;
@@ -14,7 +15,8 @@ function normalizeMode(value) {
  * - "face": full-screen robot face (boot / idle)
  * - "app": normal caregiver web UI
  *
- * Also starts a 60s inactivity timer while in "app" so the robot face returns on its own.
+ * Also starts a 60s inactivity timer while in "app" so the robot face returns on its own,
+ * and listens to the Nano so the face comes up when the robot wakes.
  */
 export function RobotModeProvider({ children, initialMode = "face" }) {
   // Current screen mode — defaults to face so the PWA boots on the robot face.
@@ -35,6 +37,17 @@ export function RobotModeProvider({ children, initialMode = "face" }) {
     clearInactivityTimer();
     setMode("face");
   }, [clearInactivityTimer]);
+
+  // Live robot state/expression from the Nano. Waking the robot brings the face up.
+  const {
+    connected: nanoConnected,
+    robotState,
+    expression: robotExpression,
+  } = useNanoEvents({
+    onRobotStateChange: (state) => {
+      if (state === "active") goFace();
+    },
+  });
 
   // Switch to the normal app UI (e.g. after tapping the face).
   const goApp = useCallback(() => {
@@ -97,8 +110,11 @@ export function RobotModeProvider({ children, initialMode = "face" }) {
       goFace, // force face mode
       goApp, // force app mode
       bumpActivity, // manually reset idle timer if needed
+      nanoConnected, // true while the backend face stream is open
+      robotState, // "sleeping" | "active" | null (Nano hasn't reported yet)
+      robotExpression, // expression name set by the Nano, or null
     }),
-    [mode, goFace, goApp, bumpActivity],
+    [mode, goFace, goApp, bumpActivity, nanoConnected, robotState, robotExpression],
   );
 
   return <RobotModeContext.Provider value={value}>{children}</RobotModeContext.Provider>;

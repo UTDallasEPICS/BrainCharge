@@ -6,7 +6,7 @@ class EmotionClassifier:
         self.model = HSEmotionRecognizer(model)
         self.emotion_labels = self.model.idx_to_class
 
-    def predict_emotions(self, face, num_top_emotions, confidence_threshold):
+    def predict_emotions(self, face, num_top_emotions: int = 3, confidence_threshold: float = 0.1):
         _, scores = self.model.predict_emotions(face, False)
         score_indices = np.argsort(scores)[::-1][:min(num_top_emotions, len(self.emotion_labels))]
 

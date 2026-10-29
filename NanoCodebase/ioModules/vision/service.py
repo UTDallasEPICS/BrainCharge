@@ -52,9 +52,10 @@ class VisionService:
     """
     def start_capture(self):
         try:
-            self.capture = open_camera(width=1920, height=1080)
-        except:
+            self.capture = open_camera()
+        except Exception:
             print("Could not open camera")
+            raise
 
         if self.test_mode:
             cv2.namedWindow(self.window, cv2.WINDOW_NORMAL)
@@ -88,10 +89,12 @@ class VisionService:
         face = rgb_frame[y1:y2, x1:x2]
 
         emotions = self.emotion_classifier.predict_emotions(
-            face,
-            self.num_top_emotions,
-            self.emotions_confidence_threshold
+            face, NUM_TOP_EMOTIONS, EMOTIONS_CONFIDENCE_THRESHOLD
         )
+        if not emotions:
+            self.current_emotions = None
+            return
+
         self.current_emotions = emotions
 
         if self.test_mode:

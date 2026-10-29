@@ -1,3 +1,4 @@
+import { useLanguage } from "../i18n/language.js";
 import "../styles/home.css";
 import { useEffect, useState } from "react";
 import { listEvents } from "../api/calendar";
@@ -17,6 +18,7 @@ function timeToMinutes(item) {
 }
 
 export default function HomeScreen({ navigate, user, onLogout }) {
+  const { t } = useLanguage();
   const [allEvents, setAllEvents] = useState([]);
   const [calendarError, setCalendarError] = useState("");
 
@@ -63,11 +65,11 @@ export default function HomeScreen({ navigate, user, onLogout }) {
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" />
             </svg>
-            Log Out
+            {t("Log Out")}
             </button>
           <div>
-            <p className="connected-to">Hello</p>
-            <h1>{user?.name || "User's Companion"}</h1>
+            <p className="connected-to">{t("Hello")}</p>
+            <h1>{user?.name || t("User's Companion")}</h1>
           </div>
           <button className="icon-btn" onClick={() => navigate("settings")}>
              {/* Settings SVG */}
@@ -77,24 +79,24 @@ export default function HomeScreen({ navigate, user, onLogout }) {
 
       <div className="home-body">
         {calendarError && (
-          <p className="calendar-warning">Calendar sync unavailable: {calendarError}</p>
+          <p className="calendar-warning">{t("Calendar sync unavailable:")} {calendarError}</p>
         )}
 
         <div className="companion-card">
           <div>
-            <p className="companion-cta-label">Self-Care Check-in</p>
-            <p className="companion-cta-title">Talk to your companion</p>
+            <p className="companion-cta-label">{t("Self-Care Check-in")}</p>
+            <p className="companion-cta-title">{t("Talk to your companion")}</p>
           </div>
   
         </div>
 
         <div className="reminders-row-header">
-          <h2 className="section-title">Upcoming Today</h2>
+          <h2 className="section-title">{t("Upcoming Today")}</h2>
         </div>
 
         {!hasAny ? (
           <div className="empty-state-card">
-            <p>No reminders or anything to schedule, add some in the reminder or schedule page.</p>
+            <p>{t("No reminders or anything to schedule, add some in the reminder or schedule page.")}</p>
           </div>
         ) : (
           top3.map((item) => (
@@ -103,7 +105,7 @@ export default function HomeScreen({ navigate, user, onLogout }) {
                 {/* Icon logic */}
               </div>
               <div className="card-text">
-                <div className="type-badge">{item.type}</div>
+                <div className="type-badge">{t(item.type)}</div>
                 <p className="card-title">{item.name || item.title}</p>
                 <p className="card-sub">{item.time} {item.date ? `· ${item.date}` : ""}</p>
                 {item.note && <p className="card-alert">{item.note}</p>}
@@ -113,10 +115,10 @@ export default function HomeScreen({ navigate, user, onLogout }) {
         )}
 
         <button className="reminders-action-bar" onClick={() => navigate("reminders")}>
-          <span className="rab-label">Manage Self-Care Reminders</span>
+          <span className="rab-label">{t("Manage Self-Care Reminders")}</span>
         </button>
         <button className="reminders-action-bar" style={{marginTop: '10px'}} onClick={() => navigate("schedule")}>
-          <span className="rab-label">Manage Care Recipient Schedule</span>
+          <span className="rab-label">{t("Manage Care Recipient Schedule")}</span>
         </button>
       </div>
     </div>

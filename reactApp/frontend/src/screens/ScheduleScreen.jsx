@@ -1,3 +1,4 @@
+import { useLanguage } from "../i18n/language.js";
 import { useState, useEffect, useCallback } from "react";
 import { deleteEvent, listEvents } from "../api/calendar";
 import "../styles/schedule.css";
@@ -14,6 +15,7 @@ function CalendarIcon() {
 }
 
 export default function ScheduleScreen({ navigate, onEditAppointment, onAddAppointment }) {
+  const { t } = useLanguage();
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -65,11 +67,10 @@ export default function ScheduleScreen({ navigate, onEditAppointment, onAddAppoi
             <polyline points="15 18 9 12 15 6"/>
           </svg>
         </button>
-        <h1>Recipient Schedule</h1>
+        <h1>{t("Recipient Schedule")}</h1>
         <p>
-          Manage appointments and tasks for the
-          <strong> person you are caring for</strong>.
-          Synced with Google Calendar.
+          {t("Manage appointments and tasks for the")}
+          <strong> {t("person you are caring for")}</strong>{t(". Synced with Google Calendar.")}
         </p>
       </div>
 
@@ -78,22 +79,22 @@ export default function ScheduleScreen({ navigate, onEditAppointment, onAddAppoi
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5">
             <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
           </svg>
-          Add Recipient Appointment
+          {t("Add Recipient Appointment")}
         </button>
 
         {error && (
           <div className="calendar-error">
             <p>{error}</p>
             <button type="button" className="retry-btn" onClick={loadAppointments}>
-              Retry
+              {t("Retry")}
             </button>
           </div>
         )}
 
-        <h2 className="section-title">Medical & Daily Care</h2>
+        <h2 className="section-title">{t("Medical & Daily Care")}</h2>
 
         {loading ? (
-          <p className="empty-state-text">Loading calendar events...</p>
+          <p className="empty-state-text">{t("Loading calendar events...")}</p>
         ) : (
           <div className="appt-list">
             {appointments.map((appt) => (
@@ -104,7 +105,7 @@ export default function ScheduleScreen({ navigate, onEditAppointment, onAddAppoi
                 <div className="appt-info">
                   <p className="appt-title">{appt.title}</p>
                   <div className="appt-meta">
-                    <span className="meta-date">{appt.date || "Today"}</span>
+                    <span className="meta-date">{appt.date || t("Today")}</span>
                     <span className="meta-divider">·</span>
                     <span className="meta-time">
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{marginRight: '4px'}}>
@@ -119,7 +120,7 @@ export default function ScheduleScreen({ navigate, onEditAppointment, onAddAppoi
                   <button
                     className="edit-reminder-btn"
                     onClick={() => onEditAppointment(appt)}
-                    title="Edit Appointment"
+                    title={t("Edit Appointment")}
                   >
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2596BE" strokeWidth="2">
                       <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
@@ -130,7 +131,7 @@ export default function ScheduleScreen({ navigate, onEditAppointment, onAddAppoi
                     className="delete-reminder-btn"
                     onClick={() => deleteAppt(appt.id)}
                     disabled={deletingId === appt.id}
-                    title="Remove Appointment"
+                    title={t("Remove Appointment")}
                   >
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ff4d4d" strokeWidth="2">
                       <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M9 6V4h6v2"/>
@@ -143,8 +144,7 @@ export default function ScheduleScreen({ navigate, onEditAppointment, onAddAppoi
             {appointments.length === 0 && !error && (
               <div className="empty-state-container">
                 <p className="empty-state-text">
-                  No appointments scheduled for the patient.
-                  Keep track of their doctor visits and routines here.
+                  {t("No appointments scheduled for the patient. Keep track of their doctor visits and routines here.")}
                 </p>
               </div>
             )}
