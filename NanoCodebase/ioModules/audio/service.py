@@ -20,13 +20,12 @@ import json
 import wave
 import struct
 from pathlib import Path
+from shutil import rmtree
 from typing import Any
 from time import time
 from warnings import warn
-
-from pyaudio import PyAudio, paInt16
+from pyaudio import PyAudio, paInt32
 from piper import PiperVoice
-
 from . import backend
 
 # Audio internal configs
@@ -35,7 +34,7 @@ VAD_CHUNK_SIZE = 1024
 
 DEFAULT_VAD_MIN_RECORDING  = 0.5
 DEFAULT_VAD_MAX_RECORDING  = 30.0
-DEFAULT_VAD_SILENCE_THRESHOLD_DB = -30
+DEFAULT_VAD_SILENCE_THRESHOLD_DB = -45
 DEFAULT_VAD_SILENCE_DURATION = 1.2
 
 class AudioService:
@@ -45,10 +44,10 @@ class AudioService:
     Right now, code should be expected to be synchronous but there should become a point where speak() and listen() are async.
     """
     def __init__(self,
-                 config: dict[str, Any],
-                 temp_directory: Path,
-                 vosk_model_path: Path,
-                 piper_model_path: Path,
+        config: dict[str, Any],
+        temp_directory: dict[str, str],
+        vosk_model_path: Path,
+        piper_model_path: Path,
     ):
         self._language = config.get("language", "en")       # Currently selected user language
 
@@ -61,9 +60,12 @@ class AudioService:
         self._voice = PiperVoice.load(piper_model_path, None, True)
         # https://github.com/OHF-Voice/piper1-gpl/blob/main/docs/API_PYTHON.md
 
-        self.audio_input_path = str(temp_directory / "audioUserInput.wav")      # User's voice input
-        self.audio_output_path = str(temp_directory / "audioSpeachOutput.wav")  # TTS Output
-        self.transcript_output_path = temp_directory / "transcript"             # STT Output
+        self.temporary_directory = Path(temp_directory["parent"], temp_directory["name"])
+        self.temporary_directory.mkdir(exist_ok=True)
+
+        self.audio_input_path = self.temporary_directory / "audioUserInput.wav"      # User's voice input
+        self.audio_output_path = self.temporary_directory / "audioSpeachOutput.wav"  # TTS Output
+        self.transcript_output_path = self.temporary_directory / "transcript"             # STT Output
 
         whisper_config = config["whisper"]
         self.whisper_binary = whisper_config["binary"]
@@ -122,13 +124,13 @@ class AudioService:
         try:
             pa, stream = self._get_audio_input_stream()
 
-            frames = []
-            silence_start = None
-            recording_start = time()
-            speech_detected = False
+            AudioChunks = []
+            SilenceStart = None
+            RecordingStart = time()
+            SpeachDetected = False
 
             while True:
-                elapsed = time() - recording_start
+                elapsed = time() - RecordingStart
 
                 # Hard cap
                 if elapsed >= max_duration:
@@ -136,47 +138,50 @@ class AudioService:
                     break
 
                 try:
-                    chunk = stream.read(VAD_CHUNK_SIZE, exception_on_overflow=False)
+                    Chunk = stream.read(VAD_CHUNK_SIZE, exception_on_overflow=False)
                 except Exception:
                     break
 
-                frames.append(chunk)
-                db = self._calculate_rms_db(chunk)
+                AudioChunks.append(Chunk)
+                db = self._calculate_rms_db(Chunk)
                 is_speech = db > silence_threshold_db
 
                 if is_speech:
                     status = "SPEECH"
-                    speech_detected = True
-                    silence_start = None
+                    SpeachDetected = True
+                    SilenceStart = None
                 else:
-                    if elapsed >= min_duration and speech_detected:
-                        if silence_start is None:
-                            silence_start = time()
-                        sil_elapsed = time() - silence_start
+                    if elapsed >= min_duration and SpeachDetected:
+                        if SilenceStart is None:
+                            SilenceStart = time()
+                        sil_elapsed = time() - SilenceStart
                         status = f"silence {sil_elapsed:.1f}/{silence_duration:.1f}s"
                     else:
                         status = "waiting..."
 
                 print(f"\r {db:6.1f} dBFS  |  {status:<22} | {elapsed:.1f}s", end="", flush=True)
 
-                if not is_speech and elapsed >= min_duration and speech_detected:
-                    if silence_start and time() - silence_start >= silence_duration:
+                if not is_speech and elapsed >= min_duration and SpeachDetected:
+                    if SilenceStart and time() - SilenceStart >= silence_duration:
                         print(f"\n  [Audio] VAD Silence threshold reached, stopping.")
                         break
 
-            if not frames:
+            if not AudioChunks:
                 return ""
 
-            # Save as WAV
-            with wave.open(str(self.audio_input_path), "wb") as wf:
-                wf.setnchannels(1)
-                wf.setsampwidth(2)  # 16-bit
-                wf.setframerate(VAD_SAMPLE_RATE)
-                wf.writeframes(b"".join(frames))
+            RawAudio = b"".join(AudioChunks)
 
-            total_duration = len(frames) * VAD_CHUNK_SIZE / VAD_SAMPLE_RATE
+            # with wave.open(str(self.audio_input_path), "wb") as wf:
+            #     wf.setnchannels(1)
+            #     wf.setsampwidth(2)  # 32-bit
+            #     wf.setframerate(VAD_SAMPLE_RATE)
+            #     wf.writeframes(b"".join(frames))
+
+            total_duration = len(AudioChunks) * VAD_CHUNK_SIZE / VAD_SAMPLE_RATE
             print(f"  [Audio] VAD Recorded {total_duration:.1f}s of audio")
-            return self._transcribe_audio()
+            return self._transcribe_audio(RawAudio)
+
+            # return self._transcribe_audio()
 
         except Exception as e:
             print(f"[Audio] VAD recording error: {e}")
@@ -283,21 +288,23 @@ class AudioService:
 
         #return process
 
-    def _transcribe_audio(self, audio_file: str|None=None) -> str:
+    def _transcribe_audio(self, audio_data:bytes) -> str:
         print("  [Audio] Beginning transcription")
         transcription_start = time()
 
-        if audio_file is None:
-            audio_file = str(self.audio_input_path)
+        with wave.open(str(self.audio_input_path), "wb") as wf:
+            wf.setnchannels(1)
+            wf.setsampwidth(4)  # 32-bit
+            wf.setframerate(VAD_SAMPLE_RATE)
+            wf.writeframes(audio_data)
 
         try:
-
             # https://thomasthelliez.com/blog/run-whisper-cpp-with-cuda-on-jetson-orin-nano-super/
             subprocess.run([
                 self.whisper_binary,
                 "-m", self.whisper_model,
-                "-f", audio_file,
-                "-of", str(self.transcript_output_path),
+                "-f", self.audio_input_path,
+                "-of", self.transcript_output_path,
                 "-otxt",
                 "-l", self._language,
             ], check=True, capture_output=True)
@@ -323,7 +330,7 @@ class AudioService:
     def _get_audio_input_stream(chunk_size = VAD_CHUNK_SIZE, sample_rate = VAD_SAMPLE_RATE):
         py_audio = PyAudio()
         stream = py_audio.open(
-            format=paInt16, channels=1, rate=sample_rate,
+            format=paInt32, channels=1, rate=sample_rate,
             input=True, frames_per_buffer=chunk_size
         )
         return py_audio, stream
@@ -335,19 +342,19 @@ class AudioService:
         Returns -inf for silence (all zeros), otherwise a negative dB value
         where 0 dBFS is the maximum possible level.
         """
-        count = len(audio_chunk) // 2  # 16-bit = 2 bytes per sample
+        count = len(audio_chunk) // 4  # 32-bit = 4 bytes per sample
         if count == 0:
             return -100.0
 
-        shorts = struct.unpack(f"{count}h", audio_chunk)
+        shorts = struct.unpack(f"{count}i", audio_chunk)
         sum_squares = sum(s * s for s in shorts)
         rms = math.sqrt(sum_squares / count)
 
         if rms == 0:
             return -100.0
 
-        # Normalize to 16-bit range (max 32768) and convert to dB
-        db = 20 * math.log10(rms / 32768.0)
+        # Normalize to 32-bit range (max 2147483648) and convert to dB
+        db = 20 * math.log10(rms / 2147483648.0)
         return db
 
     def _vosk_echo_monitor(self, tts_process, expected_sentence: str):
@@ -437,3 +444,7 @@ class AudioService:
                 stream.close()
             if pa:
                 pa.terminate()
+
+    def cleanup(self):
+        if self.temporary_directory.exists() and self.temporary_directory.is_dir():
+            rmtree(self.temporary_directory)

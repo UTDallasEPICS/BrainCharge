@@ -11,6 +11,7 @@ from .facial_recognition.camera import open_camera, read_latest_frame
 from .facial_recognition.engine import FaceRecognitionEngine
 from .emotion_classification import EmotionClassifier
 
+FRAMES_PER_SECOND = 10
 NUM_TOP_EMOTIONS = 3
 EMOTIONS_CONFIDENCE_THRESHOLD = 0.1
 
@@ -32,7 +33,9 @@ class VisionService:
             except Exception as error:
                 warn(f"Could not initialize the OpenCV models: {error}")
 
-        self.frames_per_second = float(config.get("frames_per_second", 10))
+        self.frames_per_second = float(config.get("frames_per_second", FRAMES_PER_SECOND))
+        self.num_top_emotions = int(config.get("top_emotions", NUM_TOP_EMOTIONS))
+        self.emotions_confidence_threshold = float(config.get("emotions_confidence_threshold", EMOTIONS_CONFIDENCE_THRESHOLD))
 
         self.engine = FaceRecognitionEngine()
         self.engine.initialize()
