@@ -50,7 +50,6 @@ NOTES:
 import time
 import Jetson.GPIO as GPIO
 
-# ---------------------------------------------------------------- config ---
 PWM_FREQ_HZ = 25_000
 
 NSLEEP_PIN = 15  # set to None if nSLEEP is hard-wired high
@@ -64,7 +63,6 @@ RAMP_STEP_SECONDS = 0.02  # time between speed steps while ramping
 RAMP_STEP_SIZE = 0.02     # speed change per step (speed range -1.0..1.0)
 
 
-# ----------------------------------------------------------------- motor ---
 class Motor:
     """One DC motor on a DRV8833 channel (IN1 = PWM, IN2 = direction)."""
 
@@ -107,10 +105,8 @@ class Motor:
 
     def close(self):
         self.stop()
-        self.pwm.stop()
 
 
-# ----------------------------------------------------------------- robot ---
 class Robot:
     """Differential drive: motor A = left, motor B = right (swap if needed)."""
 
@@ -153,10 +149,12 @@ class Robot:
         self.right.close()
         if NSLEEP_PIN is not None:
             GPIO.output(NSLEEP_PIN, GPIO.LOW)  # put the driver to sleep
-        GPIO.cleanup()
+        try:
+            GPIO.cleanup()
+        except OSError as e:
+            print(f"GPIO cleanup warning: {e}")
 
 
-# ------------------------------------------------------------------ demo ---
 def main():
     robot = Robot()
     try:
