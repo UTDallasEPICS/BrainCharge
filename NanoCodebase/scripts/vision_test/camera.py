@@ -1,20 +1,19 @@
-
 import cv2
+from ioModules.vision.facial_recognition.camera import open_camera
 
-cap = cv2.VideoCapture(1, cv2.CAP_DSHOW)
+resolution = {
+    "width": 1280,
+    "height": 720
+}
+
+cap = open_camera(resolution["width"], resolution["height"])
 
 if not cap.isOpened():
     raise RuntimeError("Could not open camera")
 
-# Explicitly request YUY2, the format reported by FFmpeg
-fourcc = cv2.VideoWriter_fourcc(*"YUY2")
-print("Set YUY2:", cap.set(cv2.CAP_PROP_FOURCC, fourcc))
-
-cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+cap.set(cv2.CAP_PROP_FRAME_WIDTH, resolution["width"])
+cap.set(cv2.CAP_PROP_FRAME_HEIGHT, resolution["height"])
 cap.set(cv2.CAP_PROP_FPS, 5)
-
-print("Reported FOURCC:", int(cap.get(cv2.CAP_PROP_FOURCC)))
 
 try:
     for i in range(10):
@@ -30,10 +29,7 @@ try:
             f"min={frame.min()}, max={frame.max()}"
         )
 
-        if i == 0:
-            cv2.imwrite("hiwonder_yuy2_test.png", frame)
-
-        cv2.imshow("YUY2 Camera Test", frame)
+        cv2.imshow("Camera Test", frame)
 
         if cv2.waitKey(200) & 0xFF == ord("q"):
             break
