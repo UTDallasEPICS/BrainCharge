@@ -11,6 +11,11 @@ from .facial_recognition.camera import open_camera, read_latest_frame
 from .facial_recognition.engine import FaceRecognitionEngine
 from .emotion_classification import EmotionClassifier
 
+from . import backend
+
+RESOLUTION_WIDTH = 1280
+RESOLUTION_HEIGHT = 720
+
 FRAMES_PER_SECOND = 10
 NUM_TOP_EMOTIONS = 3
 EMOTIONS_CONFIDENCE_THRESHOLD = 0.1
@@ -19,7 +24,7 @@ class VisionService:
     """
     Capture and manage vision for the robot.
     """
-    def __init__(self, config: dict[str, Any], opencv_models_path: Path, test_mode: bool):
+    def __init__(self, system: str, config: dict[str, Any], opencv_models_path: Path, test_mode: bool):
         if (opencv_models_path):
             try:
                 if not opencv_models_path.is_dir():
@@ -33,9 +38,19 @@ class VisionService:
             except Exception as error:
                 warn(f"Could not initialize the OpenCV models: {error}")
 
-        self.frames_per_second = float(config.get("frames_per_second", FRAMES_PER_SECOND))
-        self.num_top_emotions = int(config.get("top_emotions", NUM_TOP_EMOTIONS))
-        self.emotions_confidence_threshold = float(config.get("emotions_confidence_threshold", EMOTIONS_CONFIDENCE_THRESHOLD))
+        self._backend = backend.get(system)
+
+        camera_config: dict[str, Any] = config.get("camera")
+        emotion_classification_config: dict[str, Any] = config.get("emotion_classification")
+
+        self.resolution_width = int(camera_config.get("resolution_width", RESOLUTION_WIDTH))
+        self.resolution_height = int(camera_config.get("resolution_height", RESOLUTION_HEIGHT))
+
+        self.frames_per_second = float(emotion_classification_config.get("frames_per_second", FRAMES_PER_SECOND))
+        self.num_top_emotions = int(emotion_classification_config.get("top_emotions", NUM_TOP_EMOTIONS))
+        self.emotions_confidence_threshold = float(
+            emotion_classification_config.get("emotions_confidence_threshold", EMOTIONS_CONFIDENCE_THRESHOLD)
+        )
 
         self.engine = FaceRecognitionEngine()
         self.engine.initialize()
@@ -52,10 +67,9 @@ class VisionService:
     """
     def start_capture(self):
         try:
-            self.capture = open_camera()
-        except Exception:
+            self.capture = open_camera(width = self.resolution_width, height = self.resolution_height)
+        except:
             print("Could not open camera")
-            raise
 
         if self.test_mode:
             cv2.namedWindow(self.window, cv2.WINDOW_NORMAL)
@@ -89,12 +103,10 @@ class VisionService:
         face = rgb_frame[y1:y2, x1:x2]
 
         emotions = self.emotion_classifier.predict_emotions(
-            face, NUM_TOP_EMOTIONS, EMOTIONS_CONFIDENCE_THRESHOLD
+            face,
+            self.num_top_emotions,
+            self.emotions_confidence_threshold
         )
-        if not emotions:
-            self.current_emotions = None
-            return
-
         self.current_emotions = emotions
 
         if self.test_mode:
