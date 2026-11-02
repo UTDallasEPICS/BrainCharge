@@ -31,6 +31,13 @@ whisper.cpp/
 vosk*/
 
 # --- Vision
+# Camera calibration images and outputs
+**/focal_calibration/images/
+**/depth_calibration/face_depth_dataset/depth/
+**/depth_calibration/face_depth_dataset/images/
+**/depth_calibration/face_depth_dataset/points.csv
+**/depth_calibration/runs/
+# Known users' faces gallery
 known_faces/
 # Generated face-embedding cache (keep cache/.gitkeep)
 **/facial_recognition/cache/*
@@ -38,3 +45,5 @@ known_faces/
 # Downloaded YuNet / SFace ONNX models (keep models/.gitkeep)
 **/facial_recognition/models/*
 !**/facial_recognition/models/.gitkeep
+# Downloaded YOLO model
+**/movement_detection/models/yolo26n-depth.pt

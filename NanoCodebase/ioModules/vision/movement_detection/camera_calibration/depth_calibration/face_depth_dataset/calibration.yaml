@@ -1,0 +1,6 @@
+train: images/validation
+val: images/validation
+
+nc: 1
+names:
+  0: depth

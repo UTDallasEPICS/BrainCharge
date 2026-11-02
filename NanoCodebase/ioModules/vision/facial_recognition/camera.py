@@ -9,50 +9,6 @@ import cv2
 from .config import system_name
 
 
-def _get_camera_index(
-    width: int,
-    height: int,
-    cameraAPI: int,
-    total_indices: int
-) -> int:
-    """
-    Gets the camera index for the camera with resolution (width, height).
-    Scans total_indices camera ports and uses cameraAPI for capture.
-    """
-    index = 0
-    while index < total_indices:
-        # Capture a frame at resolution (width, height)
-        # and another at resolution (width + 1, height + 1)
-        capture = cv2.VideoCapture(index, cameraAPI)
-        if not capture.isOpened():
-            capture.release()
-            index += 1
-            continue
-
-        capture.set(cv2.CAP_PROP_FRAME_WIDTH, width)
-        capture.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
-
-        status1, frame1 = capture.read()
-        if (not status1) or (frame1 is None):
-            continue
-
-        capture.set(cv2.CAP_PROP_FRAME_WIDTH, width + 1)
-        capture.set(cv2.CAP_PROP_FRAME_HEIGHT, height + 1)
-
-        status2, frame2 = capture.read()
-        if (not status2) or (frame2 is None):
-            continue
-
-        # Check if the effective frame resolution matches (width, height)
-        capture.release()
-        frame_height, frame_width = frame2.shape[:2]
-        if (frame_width, frame_height) == (width, height):
-            return index
-
-        index += 1
-
-    return -1
-
 def open_camera(
     width: int = 640,
     height: int = 480,
@@ -109,6 +65,51 @@ def open_camera(
         cap.read()
     print("[FR] Camera ready.")
     return cap
+
+
+def _get_camera_index(
+    width: int,
+    height: int,
+    cameraAPI: int,
+    total_indices: int
+) -> int:
+    """
+    Gets the camera index for the camera with resolution (width, height).
+    Scans total_indices camera ports and uses cameraAPI for capture.
+    """
+    index = 0
+    while index < total_indices:
+        # Capture a frame at resolution (width, height)
+        # and another at resolution (width + 1, height + 1)
+        capture = cv2.VideoCapture(index, cameraAPI)
+        if not capture.isOpened():
+            capture.release()
+            index += 1
+            continue
+
+        capture.set(cv2.CAP_PROP_FRAME_WIDTH, width)
+        capture.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
+
+        status1, frame1 = capture.read()
+        if (not status1) or (frame1 is None):
+            continue
+
+        capture.set(cv2.CAP_PROP_FRAME_WIDTH, width + 1)
+        capture.set(cv2.CAP_PROP_FRAME_HEIGHT, height + 1)
+
+        status2, frame2 = capture.read()
+        if (not status2) or (frame2 is None):
+            continue
+
+        # Check if the effective frame resolution matches (width, height)
+        capture.release()
+        frame_height, frame_width = frame2.shape[:2]
+        if (frame_width, frame_height) == (width, height):
+            return index
+
+        index += 1
+
+    return -1
 
 
 def read_latest_frame(cap: cv2.VideoCapture) -> Tuple[bool, Optional[object]]:
