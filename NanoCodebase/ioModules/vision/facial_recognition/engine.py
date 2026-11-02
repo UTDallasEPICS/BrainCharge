@@ -241,11 +241,15 @@ class FaceRecognitionEngine:
         color: Tuple[int, int, int] = (40, 180, 60),
     ) -> np.ndarray:
         output = bgr_frame.copy()
-        (text_width, text_height), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.55, 2)
+        text_lines = label.split("\n")
+        text_sizes = [cv2.getTextSize(text_lines[line], cv2.FONT_HERSHEY_SIMPLEX, 0.55, 2)
+            for line in range(len(text_lines))]
+        text_width = max([((text_sizes[line])[0])[0] for line in range(len(text_lines))])
+        text_height = max([((text_sizes[line])[0])[1] for line in range(len(text_lines))])
 
         cv2.rectangle(output, (bbox[0], bbox[1]), (bbox[2], bbox[3]), color, 2)
         cv2.rectangle(output,
-            (bbox[0], max(0, bbox[1] - text_height - 8)),
+            (bbox[0], max(0, bbox[1] - len(text_lines) * text_height - 8)),
             (bbox[0] + text_width + 6, bbox[1]),
             color,
             -1
@@ -253,7 +257,7 @@ class FaceRecognitionEngine:
         cv2.putText(
             output,
             label,
-            (bbox[0] + 3, bbox[1] - 5),
+            (bbox[0] + 3, max(0, bbox[1] - (len(text_lines) - 1) * text_height - 8)),
             cv2.FONT_HERSHEY_SIMPLEX,
             0.55,
             (255, 255, 255),

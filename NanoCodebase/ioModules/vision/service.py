@@ -5,11 +5,12 @@ High-level vision services.
 import cv2
 from pathlib import Path
 from warnings import warn
-from typing import Any
+from typing import Any, Tuple
 
 from .facial_recognition.camera import open_camera, read_latest_frame
 from .facial_recognition.engine import FaceRecognitionEngine
 from .emotion_classification import EmotionClassifier
+from .movement_detection.face_tracker import FaceTracker
 
 from . import backend
 
@@ -58,6 +59,9 @@ class VisionService:
         self.emotion_classifier = EmotionClassifier()
         self.current_emotions = None
 
+        self.face_tracker = FaceTracker()
+        self.current_distance = None
+
         self.test_mode = test_mode
         if test_mode:
             self.window = "Vision Service Test"
@@ -77,12 +81,17 @@ class VisionService:
     """
     Capture a frame using the robot's camera, and store its inference.
     """
-    def capture_frame(self, user: str = ""):
+    def capture_frame(
+        self,
+        emotion_inference: bool = False,
+        movement_inference: bool = False,
+        user: str = ""
+    ):
         status, bgr_frame = read_latest_frame(self.capture)
         if not status or bgr_frame is None:
             raise RuntimeError("Could not read camera capture")
 
-        if user == "":
+        if len(user) == 0:
             if self.test_mode:
                 cv2.imshow(self.window, bgr_frame)
 
@@ -102,23 +111,40 @@ class VisionService:
         rgb_frame = cv2.cvtColor(bgr_frame, cv2.COLOR_BGR2RGB)
         face = rgb_frame[y1:y2, x1:x2]
 
-        emotions = self.emotion_classifier.predict_emotions(
-            face,
-            self.num_top_emotions,
-            self.emotions_confidence_threshold
-        )
-        self.current_emotions = emotions
+        if emotion_inference:
+            self.current_emotions = self.emotion_classifier.predict_emotions(
+                face,
+                self.num_top_emotions,
+                self.emotions_confidence_threshold
+            )
+
+        if movement_inference:
+            self.current_distance = self.face_tracker.estimate_distance(
+                recognition.bbox,
+                bgr_frame
+            )
 
         if self.test_mode:
-            display = self.engine.annotate_face(bgr_frame, 
-                recognition.bbox, f"{user} ({recognition.confidence:.2f}) - {emotions[0]["emotion"]}")
+            label = f"Subject: {user} ({recognition.confidence:.2f})"
+            if emotion_inference:
+                label += f"\nEmotion: {self.current_emotions[0]["emotion"]} ({self.current_emotions[0]["confidence"]:.2f})"
+            if movement_inference:
+                label += f"\nDistance: ({self.current_distance[0]:.2f} m, {self.current_distance[1]:.2f} m)"
+
+            display = self.engine.annotate_face(bgr_frame, recognition.bbox, label)
             cv2.imshow(self.window, display)
 
     """
-    Return the inference of the last frame captured by the robot's camera.
+    Return the emotion inference of the last frame captured by the robot's camera.
     """
-    def get_latest_inference(self):
+    def get_emotion_inference(self):
         return self.current_emotions
+
+    """
+    Return the movement inference of the last frame captured by the robot's camera.
+    """
+    def get_movement_inference(self):
+        return self.current_distance
 
     def delay_capture(self, delay: int):
         cv2.waitKey(delay)

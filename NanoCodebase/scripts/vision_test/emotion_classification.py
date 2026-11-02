@@ -1,4 +1,3 @@
-import cv2
 from pathlib import Path
 import json
 import platform
@@ -15,9 +14,10 @@ vision_service = VisionService(platform.system(), config.get("vision"), models_p
 vision_service.start_capture()
 
 for i in range(100):
-    vision_service.capture_frame("Test")
-    inference = vision_service.get_latest_inference()
+    vision_service.capture_frame(emotion_inference = True, user = "Test")
+    inference = vision_service.get_emotion_inference()
     print(inference)
-    cv2.waitKey(100)
+
+    vision_service.delay_capture(100)
 
 vision_service.stop_capture()
