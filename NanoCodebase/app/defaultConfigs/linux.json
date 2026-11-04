@@ -2,7 +2,7 @@
   "language": "en",
 
   "audio": {
-    "input_device": "",
+    "input_device": "tegra",
 
     "whisper": {
       "binary":"whisper.cpp/whisper-bin-ubuntu-arm64/whisper-cli",

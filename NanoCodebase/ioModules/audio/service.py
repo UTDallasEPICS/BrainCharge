@@ -69,6 +69,12 @@ class AudioService:
         self.whisper_binary = whisper_config["binary"]
         self.whisper_model = whisper_config["model"]
 
+        # Optional capture device: int index, numeric string, or name substring
+        # (e.g. "tegra" for Jetson Adafruit I2S / tegrasndt210ref). Empty = default.
+        self._input_device = config.get("input_device", "")
+        self._input_device_index = self._resolve_input_device_index(self._input_device)
+        self._log_input_device_selection()
+
         # If we have a vosk model specified then preform the setup for it
         if vosk_model_path:
             self.interrupt_event = threading.Event()
@@ -320,12 +326,105 @@ class AudioService:
             return ""
 
     @staticmethod
-    def _get_audio_input_stream(chunk_size = VAD_CHUNK_SIZE, sample_rate = VAD_SAMPLE_RATE):
+    def list_input_devices() -> list[dict[str, Any]]:
+        """Return PortAudio input devices (index, name, rate, channels)."""
         py_audio = PyAudio()
-        stream = py_audio.open(
-            format=paInt16, channels=1, rate=sample_rate,
-            input=True, frames_per_buffer=chunk_size
-        )
+        try:
+            devices: list[dict[str, Any]] = []
+            for index in range(py_audio.get_device_count()):
+                info = py_audio.get_device_info_by_index(index)
+                if int(info.get("maxInputChannels", 0)) <= 0:
+                    continue
+                devices.append({
+                    "index": index,
+                    "name": str(info.get("name", "")),
+                    "rate": float(info.get("defaultSampleRate", 0)),
+                    "channels": int(info.get("maxInputChannels", 0)),
+                })
+            return devices
+        finally:
+            py_audio.terminate()
+
+    def _resolve_input_device_index(self, device: Any) -> int | None:
+        """Map config ``input_device`` to a PortAudio device index."""
+        if device is None or device == "":
+            return None
+
+        if isinstance(device, int) or (isinstance(device, str) and device.strip().isdigit()):
+            return int(device)
+
+        needle = str(device).casefold()
+        matches = [
+            entry for entry in self.list_input_devices()
+            if needle in entry["name"].casefold()
+        ]
+        if not matches:
+            available = ", ".join(
+                f'{entry["index"]}:{entry["name"]}' for entry in self.list_input_devices()
+            ) or "(none)"
+            warn(
+                f"[Audio] input_device={device!r} not found among input devices "
+                f"[{available}]; using system default."
+            )
+            return None
+
+        chosen = matches[0]
+        if len(matches) > 1:
+            names = ", ".join(f'{entry["index"]}:{entry["name"]}' for entry in matches)
+            print(
+                f"[Audio] Multiple devices matched {device!r}; "
+                f"using first: {chosen['index']}:{chosen['name']} (matches: {names})"
+            )
+        return int(chosen["index"])
+
+    def _log_input_device_selection(self) -> None:
+        devices = self.list_input_devices()
+        if not devices:
+            warn("[Audio] No PortAudio input devices found.")
+            return
+
+        print("[Audio] Available input devices:")
+        for entry in devices:
+            marker = ""
+            if self._input_device_index is not None and entry["index"] == self._input_device_index:
+                marker = "  <-- selected"
+            print(
+                f"  [{entry['index']}] {entry['name']} "
+                f"(ch={entry['channels']}, {entry['rate']:.0f} Hz){marker}"
+            )
+
+        if self._input_device_index is None:
+            print("[Audio] Using system default input device.")
+        elif not any(entry["index"] == self._input_device_index for entry in devices):
+            warn(
+                f"[Audio] Configured input_device_index={self._input_device_index} "
+                "is not a known input device; PortAudio may fail to open."
+            )
+
+    def _get_audio_input_stream(self, chunk_size=VAD_CHUNK_SIZE, sample_rate=VAD_SAMPLE_RATE):
+        """Open a mono S16 capture stream at the VAD/Whisper sample rate.
+
+        Jetson Adafruit I2S hardware often prefers 48 kHz S32. Use
+        ``scripts/jetson_i2s_mic_setup.sh`` so ALSA exposes a plug device that
+        converts to 16 kHz S16 before PortAudio opens it.
+        """
+        py_audio = PyAudio()
+        open_kwargs: dict[str, Any] = {
+            "format": paInt16,
+            "channels": 1,
+            "rate": sample_rate,
+            "input": True,
+            "frames_per_buffer": chunk_size,
+        }
+        if self._input_device_index is not None:
+            open_kwargs["input_device_index"] = self._input_device_index
+
+        try:
+            stream = py_audio.open(**open_kwargs)
+        except Exception:
+            py_audio.terminate()
+            raise
+
         return py_audio, stream
 
     @staticmethod
