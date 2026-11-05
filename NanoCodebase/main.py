@@ -56,7 +56,7 @@ def main() -> None:
     vision = VisionService(
         config=vision_config,
         opencv_models_path=opencv_models_path,
-        test_mode=False,
+        test_mode=True,
     )
 
     orchestrator = Orchestrator(

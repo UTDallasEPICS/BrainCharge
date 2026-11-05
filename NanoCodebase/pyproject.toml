@@ -16,10 +16,10 @@ dependencies = [
     "vosk>=0.3.45",
 ]
 
-[tool.uv.sources]
-llama-cpp-python = { index = "llama-cpp-cu132" }
-
-[[tool.uv.index]]
-name = "llama-cpp-cu132"    # llama-cpp-python's precompiled CUDA
-url = "https://abetlen.github.io/llama-cpp-python/whl/cu132"
-explicit = true
+#[tool.uv.sources]
+#llama-cpp-python = { index = "llama-cpp-cu132" }
+#
+#[[tool.uv.index]]
+#name = "llama-cpp-cu132"    # llama-cpp-python's precompiled CUDA
+#url = "https://abetlen.github.io/llama-cpp-python/whl/cu132"
+#explicit = true

@@ -36,7 +36,7 @@ dependencies = [
 requires-dist = [
     { name = "hsemotion-onnx", specifier = ">=0.3.1" },
     { name = "huggingface-hub", specifier = ">=1.32.0" },
-    { name = "llama-cpp-python", specifier = ">=0.3.35", index = "https://abetlen.github.io/llama-cpp-python/whl/cu132" },
+    { name = "llama-cpp-python", specifier = ">=0.3.35" },
     { name = "piper-tts", specifier = "==1.8.0" },
     { name = "pyaudio", specifier = ">=0.2.14" },
     { name = "vosk", specifier = ">=0.3.45" },
@@ -323,17 +323,14 @@ wheels = [
 [[package]]
 name = "llama-cpp-python"
 version = "0.3.36"
-source = { registry = "https://abetlen.github.io/llama-cpp-python/whl/cu132" }
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "diskcache" },
     { name = "jinja2" },
     { name = "numpy" },
     { name = "typing-extensions" },
 ]
-wheels = [
-    { url = "https://github.com/abetlen/llama-cpp-python/releases/download/v0.3.36-cu132/llama_cpp_python-0.3.36-py3-none-manylinux_2_35_x86_64.whl" },
-    { url = "https://github.com/abetlen/llama-cpp-python/releases/download/v0.3.36-cu132/llama_cpp_python-0.3.36-py3-none-win_amd64.whl" },
-]
+sdist = { url = "https://files.pythonhosted.org/packages/ec/e9/e7de2b0463ea3ffbf0ede6cb21b58c1258a8f6521aae45ca773a59fe7cf3/llama_cpp_python-0.3.36.tar.gz", hash = "sha256:832db0699007f1be95a7e41ef12e88926b02ba836461e36a36372db2760c1a2e", size = 76589250, upload-time = "2026-10-01T05:48:01.345Z" }
 
 [[package]]
 name = "markupsafe"

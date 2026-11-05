@@ -11,7 +11,7 @@ Services perform work while the orchestrator decides when that work should occur
 # Component imports
 from ioModules.audio import AudioService
 from ioModules.vision import VisionService
-from conversationModules.llm.module import LLMModule
+from ConversationModules.LLM.module import LLMModule
 
 # Python imports
 import time
