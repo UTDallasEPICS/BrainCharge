@@ -7,9 +7,9 @@ ASSUMED WIRING (change the constants below to match yours):
     Jetson header pin   DRV8833 pin    Purpose
     -----------------   -----------    ------------------------------
     32 (hardware PWM)   AIN1           Motor A speed (PWM)
-    11                  AIN2           Motor A direction
+    8                   AIN2           Motor A direction
     33 (hardware PWM)   BIN1           Motor B speed (PWM)
-    13                  BIN2           Motor B direction
+    10                  BIN2           Motor B direction
     15                  nSLEEP         High = chip enabled, low = sleep
     any GND pin         GND            Common ground (REQUIRED)
 
