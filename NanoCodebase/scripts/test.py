@@ -1,7 +1,6 @@
 import cv2
 from pathlib import Path
-
-from .service import VisionService
+from ioModules.vision import VisionService
 
 models_path = Path(__file__).resolve().parent / "facial_recognition" / "models"
 vision_service = VisionService({}, models_path, True)

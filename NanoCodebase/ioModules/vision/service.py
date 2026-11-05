@@ -71,7 +71,6 @@ class VisionService:
         if user == "":
             if self.test_mode:
                 cv2.imshow(self.window, bgr_frame)
-
             return
 
         results = self.engine.recognize(bgr_frame)

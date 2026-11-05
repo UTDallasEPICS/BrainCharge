@@ -45,7 +45,7 @@ class AudioService:
     """
     def __init__(self,
         config: dict[str, Any],
-        temp_directory: dict[str, str],
+        temp_directory: Path,
         vosk_model_path: Path,
         piper_model_path: Path,
     ):
@@ -60,7 +60,7 @@ class AudioService:
         self._voice = PiperVoice.load(piper_model_path, None, True)
         # https://github.com/OHF-Voice/piper1-gpl/blob/main/docs/API_PYTHON.md
 
-        self.temporary_directory = Path(temp_directory["parent"], temp_directory["name"])
+        self.temporary_directory = temp_directory
         self.temporary_directory.mkdir(exist_ok=True)
 
         self.audio_input_path = self.temporary_directory / "audioUserInput.wav"      # User's voice input
