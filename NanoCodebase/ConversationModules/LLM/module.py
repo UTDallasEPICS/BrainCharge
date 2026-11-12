@@ -3,6 +3,11 @@ from typing import Final
 from pathlib import Path
 from llama_cpp import Llama, ChatCompletionRequestMessage
 
+try:  # normal app import (package on path via main.py)
+    from ConversationModules.LLM import memory
+except ImportError:  # running module.py directly as a script
+    import memory
+
 # Configs
 CONTEXT_SIZE:Final[int] = 2048
 MAX_RESPONSE_TOKENS:Final[int] = int(CONTEXT_SIZE * .1)   # 10% of allowed context for reply max
@@ -10,9 +15,11 @@ MAX_RESPONSE_TOKENS:Final[int] = int(CONTEXT_SIZE * .1)   # 10% of allowed conte
 HISTORY_SIZE:Final[int] = int(CONTEXT_SIZE * 0.75)   # Needs to be less than the total context size as there is a token overhead beyond each individual chat
 PRUNE_TARGET:Final[float] = 0.8
 
+MEMORY_MAX_TOKENS:Final[int] = 200   # upper bound for the end-of-session memory summary
+
 SYSTEM_PROMPT: Final[str] = """
 # Identity
-You are And-I, a companion designed for caregivers.
+You are BrainCharge, a companion designed for caregivers.
 You have a physical presence. Your software and physical presence are both parts of you.
 
 # Behavior
@@ -42,6 +49,22 @@ Language:
 - Instead, tell them in {language} that they can change your language in the user settings.
 """.strip()
 
+SUMMARY_PROMPT: Final[str] = """
+You maintain a long-term memory about the user for a companion robot.
+You are given the previous memory and the latest conversation.
+Rewrite the memory so it captures durable facts worth remembering about the user:
+their name, preferences, important people, ongoing situations, and anything they
+explicitly asked you to remember.
+
+Rules:
+- Write in plain third person about the user ("The user ...").
+- Keep only lasting, factual information. Drop small talk and one-off details.
+- Merge new information with the previous memory; update anything that changed.
+- Be concise: at most 80 words, no lists, no preamble.
+- If there is nothing worth remembering, repeat the previous memory unchanged.
+Output only the memory text.
+""".strip()
+
 @dataclass
 class LLMRuntime:
     """Resources and state maintained for the lifetime of the loaded LLM."""
@@ -53,8 +76,9 @@ class LLMRuntime:
 class LLMModule:
     """Handles loading and interacting with the language model."""
 
-    def __init__(self, language:str = "en") -> None:
+    def __init__(self, language:str = "en", user_id:str = "default") -> None:
         self.language = language
+        self.user_id = user_id
         self._runtime = None
 
     def startup(self) -> None:
@@ -73,6 +97,21 @@ class LLMModule:
                 "role": "system",
                 "content": SYSTEM_PROMPT.format(language=self.language),
             }
+
+        # Long-term memory: fold any remembered summary into the system prompt so
+        # it is pinned at index 0 and counted in systemTokens below (never pruned).
+        remembered = memory.load_summary(self.user_id)
+        if remembered:
+            system_message["content"] += (
+                "\n\n# What you know about the user\n"
+                "These are facts you personally remember about the user from your "
+                "past conversations together. They are true and are part of what "
+                "you know. Use them naturally, and when the user asks about "
+                "themselves, answer from these facts. Never say you lack access to "
+                "this information.\n"
+                f"{remembered}"
+            )
+
         systemTokens = len(llm.tokenize(
             system_message["content"].encode(),
             add_bos=False,
@@ -87,13 +126,53 @@ class LLMModule:
         )
 
     def shutdown(self):
-        """Unload the language model."""
+        """Persist a memory summary, then unload the language model."""
         runtime = self._runtime
         if runtime is None:
             return
 
+        # Summarize while the model is still loaded (close() frees it below).
+        self._update_memory(runtime)
+
         runtime.llm.close()
         self._runtime = None
+
+    def _update_memory(self, runtime: LLMRuntime) -> None:
+        """Rewrite long-term memory from the finished session and persist it.
+
+        Best-effort: any failure is logged and swallowed so shutdown never fails.
+        """
+        # messages[0] is the system prompt; anything beyond it is real conversation.
+        if len(runtime.messages) <= 1:
+            return
+
+        transcript = "\n".join(
+            f"{message['role']}: {message['content']}"
+            for message in runtime.messages[1:]
+        )
+        previous = memory.load_summary(self.user_id)
+
+        try:
+            response = runtime.llm.create_chat_completion(
+                [
+                    {"role": "system", "content": SUMMARY_PROMPT},
+                    {
+                        "role": "user",
+                        "content": (
+                            f"Previous memory:\n{previous or '(none)'}\n\n"
+                            f"Latest conversation:\n{transcript}\n\n"
+                            "Write the updated memory."
+                        ),
+                    },
+                ],
+                max_tokens=MEMORY_MAX_TOKENS,
+            )
+            summary = response["choices"][0]["message"]["content"].strip()
+            if summary:
+                memory.save_summary(summary, self.user_id)
+                print("[Conversation-LLM] Long-term memory updated.")
+        except Exception as error:
+            print(f"[Conversation-LLM] Failed to update memory: {error}")
 
     def generate(self, text: str, audio_path:Path | None = None) -> str:
         """Generate a response to a user prompt."""

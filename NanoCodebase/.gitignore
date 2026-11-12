@@ -15,3 +15,6 @@ whisper.cpp/
 # --- Audio
 *.onnx*
 vosk*/
+
+# --- Local data (SQLite memory / conversation stores) ---
+data/
