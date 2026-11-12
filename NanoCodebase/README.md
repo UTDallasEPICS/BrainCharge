@@ -104,28 +104,6 @@ uv run python -m piper.download_voices [VOICE-NAME]
 ```
 
 ---
-
-## 5. Install Ollama and pull a model
-
-1. Download and install from [ollama.com](https://ollama.ai)
-2. **Close and reopen PowerShell** so `ollama` is on your PATH
-3. Pull a model specified in project documentation:
-<br><sub>(gemma3n:e2b is a safe bet)</sub>
-
-```bash
-ollama pull [MODEL NAME]
-```
-
-Verify:
-
-```bash
-ollama list
-ollama run [MODEL NAME] "Hello, are you working?"
-```
----
-## 
-
----
 ## 5. Run
 
 ```powershell
@@ -150,14 +128,12 @@ uv run python main.py
 
 ## Troubleshooting
 
-### `[Ollama] Error: [WinError 2] The system cannot find the file specified`
+### llama.cpp unable to install
 
-Ollama is not installed or not on PATH.
 
-1. Install from [ollama.com](https://ollama.ai)
-2. Restart PowerShell
-3. Run `ollama pull gemma3n:e4b` (or your specified ollama model)
-4. Test with `ollama list`
+```bash
+CMAKE_ARGS="-DGGML_CUDA=on" uv pip install llama-cpp-python
+```
 
 ### `[!] pyaudio/piper-tts/vosk not installed`
 

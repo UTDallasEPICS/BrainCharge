@@ -20,6 +20,7 @@ build/
 htmlcov/
 *.cover
 .idea/
+.vscode/
 
 userConfig.json
 

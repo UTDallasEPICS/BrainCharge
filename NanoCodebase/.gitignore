@@ -1,0 +1,20 @@
+# ============================================================
+# BrainCharge — local / generated files (do not commit)
+# ============================================================
+
+# --- Python ---
+.venv/
+__pycache__/
+
+
+userConfig.json
+
+# --- Whisper.cpp (model & Binary — see README.md §2 / JETSON_SETUP.md §5.3) ---
+whisper.cpp/
+
+# --- Audio
+*.onnx*
+vosk*/
+
+# --- Local data (SQLite memory / conversation stores) ---
+data/
