@@ -6,7 +6,7 @@ import numpy as np
 from ultralytics import YOLO
 from cv2 import resize, INTER_LINEAR
 
-class FaceTracker:
+class MovementController:
     def __init__(
         self,
         depth_model = "yolo26n-depth-calibrated.pt",
@@ -28,13 +28,13 @@ class FaceTracker:
         self,
         bbox: Tuple[int, int, int, int],
         frame: np.ndarray
-    ) -> Tuple[float, float]:
+    ) -> Tuple[float, float, float]:
         y_depth = self._estimate_depth(bbox, frame)
         bearing = self._estimate_bearing(bbox)
 
-        # Correct the z-depth for the vertical bearing
-        x_depth = tan(bearing) * y_depth
-        return (x_depth, y_depth)
+        x_depth = tan(bearing[0]) * y_depth
+        z_depth = -tan(bearing[1]) * y_depth
+        return (x_depth, y_depth, z_depth)
 
     def _estimate_depth(
         self,
@@ -98,7 +98,13 @@ class FaceTracker:
         bbox: (x1, y1, x2, y2) bounding box
         frame_size: (width, height) size of BGR camera frame
         """
-        face_center = (bbox[0] + bbox[2]) / 2.0
-        bearing = atan((face_center - self.camera_calibration["cx"]) / self.camera_calibration["fx"])
+        face_center = (
+            (bbox[0] + bbox[2]) / 2.0,
+            (bbox[1] + bbox[3]) / 2.0
+        )
+        bearing = (
+            atan((face_center[0] - self.camera_calibration["cx"]) / self.camera_calibration["fx"]),
+            atan((face_center[1] - self.camera_calibration["cy"]) / self.camera_calibration["fy"])
+        )
 
         return bearing

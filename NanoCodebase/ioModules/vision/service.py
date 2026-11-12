@@ -10,14 +10,14 @@ from typing import Any, Tuple
 from .facial_recognition.camera import open_camera, read_latest_frame
 from .facial_recognition.engine import FaceRecognitionEngine
 from .emotion_classification import EmotionClassifier
-from .movement_detection.face_tracker import FaceTracker
+from .movement_detection.movement_controller import MovementController
 
 from . import backend
 
 RESOLUTION_WIDTH = 1280
 RESOLUTION_HEIGHT = 720
 
-FRAMES_PER_SECOND = 10
+CAPTURE_DELAY = 100
 NUM_TOP_EMOTIONS = 3
 EMOTIONS_CONFIDENCE_THRESHOLD = 0.1
 
@@ -46,8 +46,8 @@ class VisionService:
 
         self.resolution_width = int(camera_config.get("resolution_width", RESOLUTION_WIDTH))
         self.resolution_height = int(camera_config.get("resolution_height", RESOLUTION_HEIGHT))
+        self.capture_delay = int(camera_config.get("capture_delay", CAPTURE_DELAY))
 
-        self.frames_per_second = float(emotion_classification_config.get("frames_per_second", FRAMES_PER_SECOND))
         self.num_top_emotions = int(emotion_classification_config.get("top_emotions", NUM_TOP_EMOTIONS))
         self.emotions_confidence_threshold = float(
             emotion_classification_config.get("emotions_confidence_threshold", EMOTIONS_CONFIDENCE_THRESHOLD)
@@ -59,7 +59,7 @@ class VisionService:
         self.emotion_classifier = EmotionClassifier()
         self.current_emotions = None
 
-        self.face_tracker = FaceTracker()
+        self.movement_controller = MovementController()
         self.current_distance = None
 
         self.test_mode = test_mode
@@ -119,7 +119,7 @@ class VisionService:
             )
 
         if movement_inference:
-            self.current_distance = self.face_tracker.estimate_distance(
+            self.current_distance = self.movement_controller.estimate_distance(
                 recognition.bbox,
                 bgr_frame
             )
@@ -129,10 +129,12 @@ class VisionService:
             if emotion_inference:
                 label += f"\nEmotion: {self.current_emotions[0]["emotion"]} ({self.current_emotions[0]["confidence"]:.2f})"
             if movement_inference:
-                label += f"\nDistance: ({self.current_distance[0]:.2f} m, {self.current_distance[1]:.2f} m)"
+                label += f"\nDistance: ({self.current_distance[0]:.2f} m, {self.current_distance[1]:.2f} m, {self.current_distance[2]:.2f} m)"
 
             display = self.engine.annotate_face(bgr_frame, recognition.bbox, label)
             cv2.imshow(self.window, display)
+
+        cv2.waitKey(self.capture_delay)
 
     """
     Return the emotion inference of the last frame captured by the robot's camera.
@@ -145,9 +147,6 @@ class VisionService:
     """
     def get_movement_inference(self):
         return self.current_distance
-
-    def delay_capture(self, delay: int):
-        cv2.waitKey(delay)
 
     """
     Stop vision capture by the robot's camera.

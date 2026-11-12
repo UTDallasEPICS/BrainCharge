@@ -18,6 +18,4 @@ for i in range(100):
     inference = vision_service.get_emotion_inference()
     print(inference)
 
-    vision_service.delay_capture(100)
-
 vision_service.stop_capture()
