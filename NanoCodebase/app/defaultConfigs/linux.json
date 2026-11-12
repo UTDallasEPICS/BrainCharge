@@ -16,6 +16,20 @@
     }
   },
 
+  "vision": {
+    "camera": {
+      "resolution_width": 1280,
+      "resolution_height": 720,
+      "capture_delay": 100
+    },
+
+    "emotion_classification": {
+      "frames_per_second": 10,
+      "top_emotions": 3,
+      "emotions_confidence_threshold": 0.1
+    }
+  },
+
   "webapp": {
     "enabled": true,
     "url": "http://127.0.0.1:3001/api/nano/event",
