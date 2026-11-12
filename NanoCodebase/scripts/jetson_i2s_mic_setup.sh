@@ -48,7 +48,9 @@ require_cmd() {
 }
 
 card_listed() {
-  arecord -l 2>/dev/null | grep -Eq "\\[($1)\\]"
+  # Match ALSA short id: "card N: APE [NVIDIA Jetson Orin Nano APE]"
+  # (bracket text is the long name and often is not exactly [APE].)
+  arecord -l 2>/dev/null | grep -Eq "^card [0-9]+: ${1} "
 }
 
 detect_platform() {
