@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useLanguage } from "../i18n/language.js";
+import { useState } from "react";
 import "../styles/settings.css";
 
 const DATA_ERASE_OPTIONS = [
@@ -67,17 +68,16 @@ function SettingRow({ icon, label, sublabel, right }) {
 }
 
 export default function SettingsScreen({ navigate }) {
+  const { t } = useLanguage();
   const [settings, setSettings] = useState(loadSettings);
   const [saved, setSaved] = useState(false);
   const [showEraseConfirm, setShowEraseConfirm] = useState(false);
 
   const update = (key, value) => {
-    setSettings((prev) => {
-      const next = { ...prev, [key]: value };
-      localStorage.setItem("app_settings", JSON.stringify(next));
-      window.dispatchEvent(new Event("settings-updated"));
-      return next;
-    });
+    const next = { ...settings, [key]: value };
+    localStorage.setItem("app_settings", JSON.stringify(next));
+    setSettings(next);
+    window.dispatchEvent(new Event("settings-updated"));
   };
 
   const handleSave = () => {
@@ -108,19 +108,19 @@ export default function SettingsScreen({ navigate }) {
           </svg>
         </button>
         <div>
-          <h1>Settings</h1>
-          <p className="settings-subtitle">App preferences &amp; configuration</p>
+          <h1>{t("Settings")}</h1>
+          <p className="settings-subtitle">{t("App preferences & configuration")}</p>
         </div>
       </div>
 
       <div className="settings-body">
         {/* General */}
-        <p className="settings-section-label">General</p>
+        <p className="settings-section-label">{t("General")}</p>
         <div className="settings-group">
           <SettingRow
             icon={<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" strokeWidth="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>}
-            label="Companion Name"
-            sublabel="Name shown on the home screen"
+            label={t("Companion Name")}
+            sublabel={t("Name shown on the home screen")}
             right={
               <input
                 className="setting-input"
@@ -133,8 +133,8 @@ export default function SettingsScreen({ navigate }) {
           <div className="setting-divider" />
           <SettingRow
             icon={<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" strokeWidth="2"><circle cx="12" cy="12" r="10" /><line x1="2" y1="12" x2="22" y2="12" /><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z" /></svg>}
-            label="Language"
-            sublabel="Display language"
+            label={t("Language")}
+            sublabel={t("Display language")}
             right={
               <select
                 className="setting-select"
@@ -151,63 +151,63 @@ export default function SettingsScreen({ navigate }) {
           <div className="setting-divider" />
           <SettingRow
             icon={<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" strokeWidth="2"><path d="M4 6h16M4 12h8M4 18h4" /></svg>}
-            label="Font Size"
-            sublabel="Text size throughout the app"
+            label={t("Font Size")}
+            sublabel={t("Text size throughout the app")}
             right={
               <select
                 className="setting-select"
                 value={settings.fontSize}
                 onChange={(e) => update("fontSize", e.target.value)}
               >
-                <option value="small">Small</option>
-                <option value="medium">Medium</option>
-                <option value="large">Large</option>
+                <option value="small">{t("Small")}</option>
+                <option value="medium">{t("Medium")}</option>
+                <option value="large">{t("Large")}</option>
               </select>
             }
           />
         </div>
 
         {/* Appearance */}
-        <p className="settings-section-label">Appearance</p>
+        <p className="settings-section-label">{t("Appearance")}</p>
         <div className="settings-group">
           <SettingRow
             icon={<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" strokeWidth="2"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" /></svg>}
-            label="Dark Mode"
-            sublabel="Switch to dark theme"
+            label={t("Dark Mode")}
+            sublabel={t("Switch to dark theme")}
             right={<ToggleSwitch checked={settings.darkMode} onChange={(v) => update("darkMode", v)} />}
           />
         </div>
 
         {/* Notifications */}
-        <p className="settings-section-label">Notifications</p>
+        <p className="settings-section-label">{t("Notifications")}</p>
         <div className="settings-group">
           <SettingRow
             icon={<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" strokeWidth="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 01-3.46 0" /></svg>}
-            label="Push Notifications"
-            sublabel="Reminders &amp; appointment alerts"
+            label={t("Push Notifications")}
+            sublabel={t("Reminders & appointment alerts")}
             right={<ToggleSwitch checked={settings.notifications} onChange={(v) => update("notifications", v)} />}
           />
           <div className="setting-divider" />
           <SettingRow
             icon={<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" strokeWidth="2"><polyline points="20 6 9 17 4 12" /></svg>}
-            label="Auto Backup"
-            sublabel="Sync data automatically"
+            label={t("Auto Backup")}
+            sublabel={t("Sync data automatically")}
             right={<ToggleSwitch checked={settings.autoBackup} onChange={(v) => update("autoBackup", v)} />}
           />
         </div>
 
         {/* Data Management */}
-        <p className="settings-section-label">Data Management</p>
+        <p className="settings-section-label">{t("Data Management")}</p>
         <div className="settings-group">
           <SettingRow
             icon={<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" strokeWidth="2"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" /><path d="M10 11v6M14 11v6" /><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2" /></svg>}
-            label="Auto-Erase Data"
-            sublabel="Automatically delete app data after a set time"
+            label={t("Auto-Erase Data")}
+            sublabel={t("Automatically delete app data after a set time")}
             right={<ToggleSwitch checked={settings.dataEraseEnabled} onChange={(v) => update("dataEraseEnabled", v)} />}
           />
           {settings.dataEraseEnabled && (
             <div className="erase-sub">
-              <p className="erase-sub-label">Erase data after:</p>
+              <p className="erase-sub-label">{t("Erase data after:")}</p>
               <div className="erase-options">
                 {DATA_ERASE_OPTIONS.map((opt) => (
                   <button
@@ -215,7 +215,7 @@ export default function SettingsScreen({ navigate }) {
                     className={`erase-chip ${settings.dataErase === opt.value ? "erase-chip-active" : ""}`}
                     onClick={() => update("dataErase", opt.value)}
                   >
-                    {opt.label}
+                    {t(opt.label)}
                   </button>
                 ))}
               </div>
@@ -224,7 +224,7 @@ export default function SettingsScreen({ navigate }) {
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2" style={{ flexShrink: 0 }}>
                     <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
                   </svg>
-                  Reminders and local data will be cleared {DATA_ERASE_OPTIONS.find(o => o.value === settings.dataErase)?.label.toLowerCase()} of inactivity.
+                  {t("Reminders and local data will be cleared {period} of inactivity.", { period: t(DATA_ERASE_OPTIONS.find(o => o.value === settings.dataErase)?.label.toLowerCase() || "") })}
                 </p>
               )}
             </div>
@@ -236,11 +236,11 @@ export default function SettingsScreen({ navigate }) {
                 <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#e05252" strokeWidth="2"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" /><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2" /></svg>
               </div>
               <div>
-                <p className="setting-label setting-label-danger">Erase All Data Now</p>
-                <p className="setting-sublabel">Immediately clear all local data</p>
+                <p className="setting-label setting-label-danger">{t("Erase All Data Now")}</p>
+                <p className="setting-sublabel">{t("Immediately clear all local data")}</p>
               </div>
             </div>
-            <button className="danger-btn" onClick={handleEraseNow}>Erase</button>
+            <button className="danger-btn" onClick={handleEraseNow}>{t("Erase")}</button>
           </div>
         </div>
 
@@ -248,10 +248,10 @@ export default function SettingsScreen({ navigate }) {
           {saved ? (
             <>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5"><polyline points="20 6 9 17 4 12" /></svg>
-              Saved!
+              {t("Saved!")}
             </>
           ) : (
-            "Save Settings"
+            t("Save Settings")
           )}
         </button>
       </div>
@@ -263,11 +263,11 @@ export default function SettingsScreen({ navigate }) {
             <div className="modal-icon-wrap">
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#e05252" strokeWidth="2"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" /><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2" /></svg>
             </div>
-            <h3 className="modal-title">Erase All Data?</h3>
-            <p className="modal-body">This will permanently delete all reminders and local app data. This cannot be undone.</p>
+            <h3 className="modal-title">{t("Erase All Data?")}</h3>
+            <p className="modal-body">{t("This will permanently delete all reminders and local app data. This cannot be undone.")}</p>
             <div className="modal-actions">
-              <button className="modal-cancel" onClick={() => setShowEraseConfirm(false)}>Cancel</button>
-              <button className="modal-confirm" onClick={confirmErase}>Yes, Erase</button>
+              <button className="modal-cancel" onClick={() => setShowEraseConfirm(false)}>{t("Cancel")}</button>
+              <button className="modal-confirm" onClick={confirmErase}>{t("Yes, Erase")}</button>
             </div>
           </div>
         </div>

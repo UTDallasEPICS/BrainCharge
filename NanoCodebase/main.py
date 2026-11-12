@@ -2,11 +2,12 @@ from pathlib import Path
 import json
 import os
 import platform
-from tempfile import TemporaryDirectory
+from tempfile import gettempdir
 import shutil
 
 from app.orchestrator import Orchestrator
 from ioModules.audio import AudioService
+from ioModules.vision import VisionService
 
 def main() -> None:
     """
@@ -24,6 +25,7 @@ def main() -> None:
         config = json.load(file)
 
     audio_config = config.get("audio", {})
+    vision_config = config.get("vision", {})
 
     language_dir = Path("languageFiles") / config.get("language", "en")
     with (language_dir / "config.json").open("r", encoding="utf-8") as file:
@@ -31,29 +33,39 @@ def main() -> None:
     piper_model_path:Path = next(language_dir.glob("*.onnx"))
     vosk_model_path:Path = next(language_dir.glob("vosk*"))
 
+    # TODO: Move CV models from "NanoCodebase\ioModules\vision\facial_recognition\models"
+    #       to "NanoCodebase\visionFiles" and change "opencv_models_path" below to use "visionFiles" path
+    # opencv_models_path:Path = Path("visionFiles")
+    opencv_models_path:Path = Path("ioModules", "vision", "facial_recognition", "models")
+
     temp_parent = (
         "/dev/shm"
         if system == "Linux" and os.path.isdir("/dev/shm")
-        else None
+        else gettempdir()
     )
 
-    with TemporaryDirectory(
-        prefix="companion_robot_",
-        dir=temp_parent,
-    ) as temporary_directory:
-        audio = AudioService(
-            config=audio_config,
-            temp_directory=Path(temporary_directory),
-            vosk_model_path=vosk_model_path,
-            piper_model_path=piper_model_path,
-        )
+    audio = AudioService(
+        config=audio_config,
+        temp_directory={
+            "name": "companion_robot_temp",
+            "parent": temp_parent
+        },
+        vosk_model_path=vosk_model_path,
+        piper_model_path=piper_model_path,
+    )
+    vision = VisionService(
+        config=vision_config,
+        opencv_models_path=opencv_models_path,
+        test_mode=False,
+    )
 
-        orchestrator = Orchestrator(
-            language=language_phrases,
-            audio_service=audio,
-        )
+    orchestrator = Orchestrator(
+        language=language_phrases,
+        audio_service=audio,
+        vision_service=vision,
+    )
 
-        orchestrator.startup()
+    orchestrator.startup()
 
 if __name__ == "__main__":
     main()

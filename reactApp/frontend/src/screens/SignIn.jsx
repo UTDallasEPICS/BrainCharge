@@ -1,8 +1,10 @@
+import { useLanguage } from "../i18n/language.js";
 import { useState } from "react";
 import { signIn, getSession } from "../lib/auth-client";
 import "../styles/signin.css";
 
 export default function SignIn({ navigate }) {
+  const { t } = useLanguage();
   const [form, setForm] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -32,7 +34,7 @@ export default function SignIn({ navigate }) {
 
   return (
     <div className="sign-in">
-      <button className="back-arrow" onClick={() => navigate("splash")} aria-label="Go back">
+      <button className="back-arrow" onClick={() => navigate("splash")} aria-label={t("Go back")}>
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
           <polyline points="15 18 9 12 15 6" />
         </svg>
@@ -45,15 +47,15 @@ export default function SignIn({ navigate }) {
             <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
           </svg>
         </div>
-        <h1>Welcome back</h1>
-        <p className="subtitle">Sign in to your account</p>
+        <h1>{t("Welcome back")}</h1>
+        <p className="subtitle">{t("Sign in to your account")}</p>
       </div>
 
       {error && <p className="error-banner">{error}</p>}
 
       <form onSubmit={handleSubmit} noValidate>
         <div className="form-group">
-          <label htmlFor="email">Email</label>
+          <label htmlFor="email">{t("Email")}</label>
           <input
             id="email"
             type="email"
@@ -66,13 +68,13 @@ export default function SignIn({ navigate }) {
 
         <div className="form-group">
           <label htmlFor="password">
-            Password
+            {t("Password")}
             <button
               type="button"
               className="forgot-link"
               onClick={() => {/* future: forgot password */}}
             >
-              Forgot password?
+              {t("Forgot password?")}
             </button>
           </label>
           <input
@@ -80,20 +82,20 @@ export default function SignIn({ navigate }) {
             type="password"
             value={form.password}
             onChange={set("password")}
-            placeholder="Enter your password"
+            placeholder={t("Enter your password")}
             autoComplete="current-password"
           />
         </div>
 
         <div className="signin-footer">
           <button type="submit" className="signin-btn" disabled={loading}>
-            {loading ? "Signing in…" : "Sign In"}
+            {loading ? t("Signing in…") : t("Sign In")}
           </button>
 
           <p className="signup-prompt">
-            Don't have an account?{" "}
+            {t("Don't have an account?")}{" "}
             <button type="button" className="signup-link" onClick={() => navigate("make-account")}>
-              Create one
+              {t("Create one")}
             </button>
           </p>
         </div>

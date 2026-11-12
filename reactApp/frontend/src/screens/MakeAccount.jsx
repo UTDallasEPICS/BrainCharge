@@ -1,3 +1,4 @@
+import { useLanguage } from "../i18n/language.js";
 import { useState } from "react";
 import { signUp, getSession } from "../lib/auth-client";
 import "../styles/makeaccount.css";
@@ -10,6 +11,7 @@ const PersonIcon = () => (
 );
 
 export default function MakeAccount({ navigate }) {
+  const { t } = useLanguage();
   const [form, setForm] = useState({
     firstName: "", lastName: "",
     username: "", email: "",
@@ -58,21 +60,21 @@ export default function MakeAccount({ navigate }) {
 
   return (
     <div className="make-account">
-      <button className="back-arrow" onClick={() => navigate("splash")} aria-label="Go back">
+      <button className="back-arrow" onClick={() => navigate("splash")} aria-label={t("Go back")}>
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
           <polyline points="15 18 9 12 15 6" />
         </svg>
       </button>
 
-      <h1>Create Account</h1>
-      <p className="subtitle">Enter information for your account</p>
+      <h1>{t("Create Account")}</h1>
+      <p className="subtitle">{t("Enter information for your account")}</p>
 
       {errors.general && <p className="error-banner">{errors.general}</p>}
 
       <form onSubmit={handleSubmit} noValidate>
         <div className="row-2">
           <div className="form-group">
-            <label htmlFor="firstName">First Name</label>
+            <label htmlFor="firstName">{t("First Name")}</label>
             <input
               id="firstName" type="text"
               value={form.firstName} onChange={set("firstName")}
@@ -83,7 +85,7 @@ export default function MakeAccount({ navigate }) {
           </div>
 
           <div className="form-group">
-            <label htmlFor="lastName">Last Name</label>
+            <label htmlFor="lastName">{t("Last Name")}</label>
             <input
               id="lastName" type="text"
               value={form.lastName} onChange={set("lastName")}
@@ -95,7 +97,7 @@ export default function MakeAccount({ navigate }) {
         </div>
 
         <div className="form-group">
-          <label htmlFor="username">Username</label>
+          <label htmlFor="username">{t("Username")}</label>
           <input
             id="username" type="text"
             value={form.username} onChange={set("username")}
@@ -107,7 +109,7 @@ export default function MakeAccount({ navigate }) {
         </div>
 
         <div className="form-group">
-          <label htmlFor="email">Email</label>
+          <label htmlFor="email">{t("Email")}</label>
           <input
             id="email" type="email"
             value={form.email} onChange={set("email")}
@@ -119,7 +121,7 @@ export default function MakeAccount({ navigate }) {
         </div>
 
         <div className="form-group">
-          <label htmlFor="dob">Date of Birth</label>
+          <label htmlFor="dob">{t("Date of Birth")}</label>
           <input
             id="dob" type="date"
             value={form.dob} onChange={set("dob")}
@@ -132,11 +134,11 @@ export default function MakeAccount({ navigate }) {
         <div className="divider" />
 
         <div className="form-group">
-          <label htmlFor="password">Password</label>
+          <label htmlFor="password">{t("Password")}</label>
           <input
             id="password" type="password"
             value={form.password} onChange={set("password")}
-            placeholder="Min. 8 characters"
+            placeholder={t("Min. 8 characters")}
             autoComplete="new-password"
             className={errors.password ? "input-error" : ""}
           />
@@ -144,7 +146,7 @@ export default function MakeAccount({ navigate }) {
         </div>
 
         <button type="submit" disabled={loading}>
-          {loading ? "Creating account…" : "Create Account"}
+          {loading ? t("Creating account…") : t("Create Account")}
         </button>
       </form>
     </div>

@@ -1,16 +1,18 @@
+import { useLanguage } from "../i18n/language.js";
 import { useState } from "react";
 import "../styles/addreminder.css";
 
 const DAYS = ["M", "T", "W", "Th", "F", "S", "Su"];
 
 export default function AddReminderScreen({ navigate }) {
+  const { t } = useLanguage();
   const [name, setName] = useState("");
   const [time, setTime] = useState("08:00"); // Default to 8 AM
   const [selectedDays, setSelectedDays] = useState(["M", "T", "W", "Th", "F", "S", "Su"]);
   const [note, setNote] = useState("");
 
   const toggleDay = (day) => {
-    setSelectedDays(prev => 
+    setSelectedDays(prev =>
       prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day]
     );
   };
@@ -56,33 +58,33 @@ export default function AddReminderScreen({ navigate }) {
             <polyline points="15 18 9 12 15 6"/>
           </svg>
         </button>
-        <h1>Self-Care Goal</h1>
-        <p>Set a reminder to prioritize your health.</p>
+        <h1>{t("Self-Care Goal")}</h1>
+        <p>{t("Set a reminder to prioritize your health.")}</p>
       </div>
 
       <div className="ar-body">
         {/* Name Input */}
         <div className="form-group">
-          <label className="form-label">I want to...</label>
-          <input 
-            className="form-input" 
-            placeholder="e.g., Meditate, drink water, take a walk" 
-            value={name} 
+          <label className="form-label">{t("I want to...")}</label>
+          <input
+            className="form-input"
+            placeholder={t("e.g., Meditate, drink water, take a walk")}
+            value={name}
             onChange={(e) => setName(e.target.value)}
           />
         </div>
 
         {/* Frequency Bar (Day Picker) */}
         <div className="form-group">
-          <label className="form-label">Repeat on</label>
+          <label className="form-label">{t("Repeat on")}</label>
           <div className="day-picker-bar">
             {DAYS.map((day) => (
-              <button 
-                key={day} 
+              <button
+                key={day}
                 className={`day-chip ${selectedDays.includes(day) ? "active" : ""}`}
                 onClick={() => toggleDay(day)}
               >
-                {day}
+                {t(day)}
               </button>
             ))}
           </div>
@@ -90,27 +92,27 @@ export default function AddReminderScreen({ navigate }) {
 
         {/* Clock Picker */}
         <div className="form-group">
-          <label className="form-label">What time?</label>
-          <input 
-            type="time" 
-            className="form-input clock-input" 
-            value={time} 
+          <label className="form-label">{t("What time?")}</label>
+          <input
+            type="time"
+            className="form-input clock-input"
+            value={time}
             onChange={(e) => setTime(e.target.value)}
           />
         </div>
 
         {/* Note Input */}
         <div className="form-group">
-          <label className="form-label">Extra Note (Optional)</label>
-          <input 
-            className="form-input" 
-            placeholder="e.g., You've got this!" 
-            value={note} 
+          <label className="form-label">{t("Extra Note (Optional)")}</label>
+          <input
+            className="form-input"
+            placeholder={t("e.g., You've got this!")}
+            value={note}
             onChange={(e) => setNote(e.target.value)}
           />
         </div>
 
-        <button className="submit-btn" onClick={handleSave}>Set Reminder</button>
+        <button className="submit-btn" onClick={handleSave}>{t("Set Reminder")}</button>
       </div>
     </div>
   );

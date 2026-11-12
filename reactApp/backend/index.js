@@ -5,6 +5,7 @@ import { toNodeHandler, fromNodeHeaders } from "better-auth/node";
 import { auth } from "./auth.js";
 import { ensureAuthDatabase } from "./migrate-auth.js";
 import { requireAuth } from "./middleware/requireAuth.js";
+import nanoRouter from "./nanoLink/routes.js";
 import {
   createEvent,
   deleteEvent,
@@ -30,6 +31,8 @@ app.use(
 app.all("/api/auth/*", toNodeHandler(auth));
 
 app.use(express.json());
+
+app.use(nanoRouter);
 
 app.get("/api/health", (_req, res) => {
   res.json({ ok: true, service: "braincharge-calendar-api" });

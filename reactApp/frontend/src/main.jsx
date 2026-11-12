@@ -1,6 +1,8 @@
+import LanguageProvider from "./i18n/LanguageProvider.jsx";
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { registerSW } from "virtual:pwa-register";
+import { RobotModeProvider } from "./context/RobotModeProvider.jsx";
 import App from "./App.jsx";
 
 registerSW({
@@ -12,6 +14,11 @@ registerSW({
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
-    <App />
+    {/* Provides face vs app mode to the whole app (boots on the robot face) */}
+    <LanguageProvider>
+      <RobotModeProvider>
+        <App />
+      </RobotModeProvider>
+    </LanguageProvider>
   </React.StrictMode>,
 );

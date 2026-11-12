@@ -1,5 +1,8 @@
+import { useLanguage } from "./i18n/language.js";
 import { useState, useEffect, lazy, Suspense } from "react";
 import { useSession, signOut } from "./lib/auth-client";
+import { useRobotMode } from "./context/robotModeContext.js";
+import RobotBootFace from "./face/RobotBootFace.jsx";
 import SplashScreen from "./screens/SplashScreen";
 import HomeScreen from "./screens/HomeScreen";
 import ScheduleScreen from "./screens/ScheduleScreen";
@@ -16,11 +19,12 @@ import NotificationCenter from "./components/NotificationCenter";
 import "./styles/global.css";
 
 function CalendarLoading() {
+  const { t } = useLanguage();
   return (
     <div className="calendar-screen calendar-loading-screen">
       <div className="calendar-header">
-        <h1>Calendar</h1>
-        <p>Loading calendar view...</p>
+        <h1>{t("Calendar")}</h1>
+        <p>{t("Loading calendar view...")}</p>
       </div>
     </div>
   );
@@ -33,9 +37,10 @@ const CalendarScreen = lazy(() =>
 const PUBLIC_SCREENS = new Set(["splash", "sign-in", "make-account"]);
 
 function AuthLoading({ message = "Loading..." }) {
+  const { t } = useLanguage();
   return (
     <div className="app-shell auth-loading">
-      <p>{message}</p>
+      <p>{t(message)}</p>
     </div>
   );
 }
@@ -47,6 +52,7 @@ function RequireAuth({ session, isPending, children, message = "Signing you in..
 }
 
 export default function App() {
+  const { mode, goApp, robotState, robotExpression } = useRobotMode();
   const { data: session, isPending } = useSession();
   const [screen, setScreen] = useState("splash");
   const [allData, setAllData] = useState([]);
@@ -115,6 +121,18 @@ export default function App() {
     window.addEventListener("storage", loadData);
     return () => window.removeEventListener("storage", loadData);
   }, [screen]);
+
+  // Full-screen robot face (boot / idle). Must stay below every hook above.
+  if (mode === "face") {
+    // Idle animation only while the robot is asleep or offline; awake, it holds the Nano's expression.
+    return (
+      <RobotBootFace
+        onDismiss={goApp}
+        playIdle={robotState !== "active"}
+        expressionOverride={robotExpression}
+      />
+    );
+  }
 
   const hideNav = [
     "splash",

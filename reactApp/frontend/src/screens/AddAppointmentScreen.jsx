@@ -1,3 +1,4 @@
+import { useLanguage } from "../i18n/language.js";
 import { useState, useEffect } from "react";
 import { createEvent, updateEvent, time12hTo24h } from "../api/calendar";
 import "../styles/addappointment.css";
@@ -9,6 +10,7 @@ export default function AddAppointmentScreen({
   returnScreen = "schedule",
   onClearEdit,
 }) {
+  const { t } = useLanguage();
   const [reminder, setReminder] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -89,11 +91,11 @@ export default function AddAppointmentScreen({
             <polyline points="15 18 9 12 15 6" />
           </svg>
         </button>
-        <h1>{isEditing ? "Edit Appointment" : "Recipient Appointment"}</h1>
+        <h1>{isEditing ? t("Edit Appointment") : t("Recipient Appointment")}</h1>
         <p>
           {isEditing
-            ? "Update this event in Google Calendar."
-            : "Schedule medical visits or events for the care recipient."}
+            ? t("Update this event in Google Calendar.")
+            : t("Schedule medical visits or events for the care recipient.")}
         </p>
       </div>
 
@@ -101,19 +103,19 @@ export default function AddAppointmentScreen({
         {error && <p className="form-error">{error}</p>}
 
         <div className="form-group">
-          <label className="form-label">Appointment Title</label>
+          <label className="form-label">{t("Appointment Title")}</label>
           <input
             className="form-input"
             type="text"
             name="title"
-            placeholder="e.g., General Physician Visit"
+            placeholder={t("e.g., General Physician Visit")}
             value={form.title}
             onChange={handleChange}
           />
         </div>
 
         <div className="form-group">
-          <label className="form-label">Date</label>
+          <label className="form-label">{t("Date")}</label>
           <input
             className="form-input native-picker"
             type="date"
@@ -124,7 +126,7 @@ export default function AddAppointmentScreen({
         </div>
 
         <div className="form-group">
-          <label className="form-label">Time</label>
+          <label className="form-label">{t("Time")}</label>
           <input
             className="form-input native-picker"
             type="time"
@@ -135,18 +137,18 @@ export default function AddAppointmentScreen({
         </div>
 
         <div className="form-group">
-          <label className="form-label">Notes</label>
+          <label className="form-label">{t("Notes")}</label>
           <textarea
             className="form-textarea"
             name="notes"
-            placeholder="Add specific instructions, e.g., fasting required..."
+            placeholder={t("Add specific instructions, e.g., fasting required...")}
             value={form.notes}
             onChange={handleChange}
           />
         </div>
 
         <div className="toggle-row">
-          <span className="toggle-label">Alert me before this event</span>
+          <span className="toggle-label">{t("Alert me before this event")}</span>
           <button
             className={`toggle-switch ${reminder ? "on" : "off"}`}
             onClick={() => setReminder(!reminder)}
@@ -157,7 +159,7 @@ export default function AddAppointmentScreen({
         </div>
 
         <button className="submit-btn" onClick={handleSubmit} disabled={saving}>
-          {saving ? "Saving..." : isEditing ? "Update Appointment" : "Save Appointment"}
+          {saving ? t("Saving...") : isEditing ? t("Update Appointment") : t("Save Appointment")}
         </button>
       </div>
     </div>

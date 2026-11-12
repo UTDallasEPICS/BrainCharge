@@ -14,5 +14,11 @@
       "warmup_seconds": 0.4,
       "echo_similarity_threshold": 0.55
     }
+  },
+
+  "webapp": {
+    "enabled": true,
+    "url": "http://127.0.0.1:3001/api/nano/event",
+    "token": "change-me"
   }
 }

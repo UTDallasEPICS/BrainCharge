@@ -20,6 +20,7 @@ import json
 import wave
 import struct
 from pathlib import Path
+from shutil import rmtree
 from typing import Any
 from time import time
 from warnings import warn
@@ -43,10 +44,10 @@ class AudioService:
     Right now, code should be expected to be synchronous but there should become a point where speak() and listen() are async.
     """
     def __init__(self,
-                 config: dict[str, Any],
-                 temp_directory: Path,
-                 vosk_model_path: Path,
-                 piper_model_path: Path,
+        config: dict[str, Any],
+        temp_directory: dict[str, str],
+        vosk_model_path: Path,
+        piper_model_path: Path,
     ):
         self._language = config.get("language", "en")       # Currently selected user language
 
@@ -59,9 +60,12 @@ class AudioService:
         self._voice = PiperVoice.load(piper_model_path, None, True)
         # https://github.com/OHF-Voice/piper1-gpl/blob/main/docs/API_PYTHON.md
 
-        self.audio_input_path = temp_directory / "audioUserInput.wav"      # User's voice input
-        self.audio_output_path = temp_directory / "audioSpeachOutput.wav"  # TTS Output
-        self.transcript_output_path = temp_directory / "transcript"             # STT Output
+        self.temporary_directory = Path(temp_directory["parent"], temp_directory["name"])
+        self.temporary_directory.mkdir(exist_ok=True)
+
+        self.audio_input_path = self.temporary_directory / "audioUserInput.wav"      # User's voice input
+        self.audio_output_path = self.temporary_directory / "audioSpeachOutput.wav"  # TTS Output
+        self.transcript_output_path = self.temporary_directory / "transcript"             # STT Output
 
         whisper_config = config["whisper"]
         self.whisper_binary = whisper_config["binary"]
@@ -440,3 +444,7 @@ class AudioService:
                 stream.close()
             if pa:
                 pa.terminate()
+
+    def cleanup(self):
+        if self.temporary_directory.exists() and self.temporary_directory.is_dir():
+            rmtree(self.temporary_directory)
