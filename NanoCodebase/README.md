@@ -4,7 +4,7 @@ Run `main.py` on a Windows (or desktop) PC to test the **voice pipeline** withou
 
 For full robot deployment on NVIDIA Jetson Orin Nano, see [JETSON_SETUP.md](docs/old/JETSON_SETUP.md).
 
-Adafruit I2S MEMS mic on Jetson Nano: [JETSON_I2S_MIC.md](docs/JETSON_I2S_MIC.md).
+Adafruit I2S MEMS mic on Jetson (Orin Nano / Nano): [JETSON_I2S_MIC.md](docs/JETSON_I2S_MIC.md).
 
 ---
 

@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
-# Configure ALSA for the Adafruit SPH0645LM4H I2S MEMS mic on Jetson Nano.
+# Configure ALSA for the Adafruit SPH0645LM4H I2S MEMS mic on Jetson.
+#
+# Supports:
+#   - Jetson Orin Nano: card APE, header I2S2
+#   - Jetson Nano (T210): card tegrasndt210ref, header I2S4
 #
 # Prerequisites:
 #   - jetson-io already enabled "Adafruit SPH0645LM4H" (pinmux) and rebooted
@@ -10,9 +14,12 @@
 #   ./scripts/jetson_i2s_mic_setup.sh           # route + install plug pcm
 #   ./scripts/jetson_i2s_mic_setup.sh --verify  # record 3s test WAV
 #   ./scripts/jetson_i2s_mic_setup.sh --status  # show card / mux state
+#   CARD=APE I2S_IF=I2S2 ./scripts/jetson_i2s_mic_setup.sh   # force Orin
 set -euo pipefail
 
-CARD="${CARD:-tegrasndt210ref}"
+CARD="${CARD:-}"
+I2S_IF="${I2S_IF:-}"
+PLATFORM=""
 ASOUND_MARKER="# BrainCharge Adafruit I2S mic"
 ASOUND_FILE="${HOME}/.asoundrc"
 VERIFY=0
@@ -23,7 +30,7 @@ for arg in "$@"; do
     --verify) VERIFY=1 ;;
     --status) STATUS=1 ;;
     -h|--help)
-      sed -n '2,16p' "$0"
+      sed -n '2,20p' "$0"
       exit 0
       ;;
     *)
@@ -40,16 +47,59 @@ require_cmd() {
   fi
 }
 
+card_listed() {
+  arecord -l 2>/dev/null | grep -Eq "\\[($1)\\]"
+}
+
+detect_platform() {
+  # Honor explicit CARD / I2S_IF; otherwise prefer Orin (APE) then classic Nano.
+  if [[ -z "$CARD" ]]; then
+    if card_listed "APE"; then
+      CARD="APE"
+    elif card_listed "tegrasndt210ref"; then
+      CARD="tegrasndt210ref"
+    else
+      echo "No known Jetson ALSA capture card found (expected APE or tegrasndt210ref)." >&2
+      echo "Is jetson-io configured for Adafruit SPH0645LM4H?" >&2
+      arecord -l || true
+      exit 1
+    fi
+  fi
+
+  if [[ -z "$I2S_IF" ]]; then
+    case "$CARD" in
+      APE) I2S_IF="I2S2" ;;
+      tegrasndt210ref) I2S_IF="I2S4" ;;
+      *)
+        echo "Unknown card '${CARD}'; set I2S_IF (e.g. I2S2 or I2S4)." >&2
+        exit 1
+        ;;
+    esac
+  fi
+
+  case "$CARD" in
+    APE) PLATFORM="orin" ;;
+    tegrasndt210ref) PLATFORM="nano-t210" ;;
+    *) PLATFORM="custom" ;;
+  esac
+
+  echo "Detected platform=${PLATFORM} card=${CARD} i2s=${I2S_IF}"
+}
+
 print_status() {
   echo "=== arecord -l ==="
   arecord -l || true
   echo
-  echo "=== amixer mux (card=${CARD}) ==="
+  echo "=== amixer mux (card=${CARD}, ${I2S_IF}) ==="
   amixer -c "$CARD" sget "ADMAIF1 Mux" 2>/dev/null || echo "(ADMAIF1 Mux unavailable)"
-  amixer -c "$CARD" sget "I2S4 Mux" 2>/dev/null || echo "(I2S4 Mux unavailable)"
+  amixer -c "$CARD" sget "${I2S_IF} Mux" 2>/dev/null || echo "(${I2S_IF} Mux unavailable)"
+  if [[ "$PLATFORM" == "orin" ]]; then
+    amixer -c "$CARD" sget "${I2S_IF} codec frame mode" 2>/dev/null \
+      || echo "(${I2S_IF} codec frame mode unavailable)"
+  fi
   echo
-  echo "=== named PCMs (braincharge / tegra / default) ==="
-  arecord -L 2>/dev/null | grep -Ei 'braincharge|tegra|^default' || true
+  echo "=== named PCMs (braincharge / tegra / APE / default) ==="
+  arecord -L 2>/dev/null | grep -Ei 'braincharge|tegra|^default|APE' || true
 }
 
 install_asoundrc() {
@@ -104,18 +154,28 @@ route_i2s() {
   # alsactl init can return non-zero on some L4T builds even when usable
   alsactl init "$CARD" || true
 
-  echo "Mapping ADMAIF1 <- I2S4"
-  amixer -c "$CARD" cset name="ADMAIF1 Mux" "I2S4" >/dev/null
+  echo "Mapping ADMAIF1 <- ${I2S_IF}"
+  amixer -c "$CARD" cset name="ADMAIF1 Mux" "$I2S_IF" >/dev/null
 
-  # Optional soft volume path — ignore failures on boards without MVC widgets
-  if amixer -c "$CARD" cset name="MVC1 Mux" "I2S4" >/dev/null 2>&1; then
-    amixer -c "$CARD" cset name="ADMAIF1 Mux" "MVC1" >/dev/null 2>&1 || true
-    amixer -c "$CARD" cset name="MVC1 Vol" 13500 >/dev/null 2>&1 || true
-    amixer -c "$CARD" cset name="MVC1 Channels" 0 >/dev/null 2>&1 || true
-    echo "MVC volume path enabled (boosted)"
+  # Orin often also wants the reverse mux; ignore if the control is absent.
+  amixer -c "$CARD" cset name="${I2S_IF} Mux" "ADMAIF1" >/dev/null 2>&1 || true
+
+  if [[ "$PLATFORM" == "orin" ]]; then
+    # SPH0645 expects Jetson-driven BCLK/LRCLK and standard I2S framing.
+    # Do not set codec master mode to cbs-cfs (that is for external-clock / TDM).
+    amixer -c "$CARD" cset name="${I2S_IF} codec frame mode" "i2s" >/dev/null 2>&1 || true
+    amixer -c "$CARD" cset name="${I2S_IF} Capture Audio Bit Format" 32 >/dev/null 2>&1 || true
+    amixer -c "$CARD" cset name="${I2S_IF} codec bit format" 32 >/dev/null 2>&1 || true
+  else
+    # Optional soft volume path — ignore failures on boards without MVC widgets
+    if amixer -c "$CARD" cset name="MVC1 Mux" "$I2S_IF" >/dev/null 2>&1; then
+      amixer -c "$CARD" cset name="ADMAIF1 Mux" "MVC1" >/dev/null 2>&1 || true
+      amixer -c "$CARD" cset name="MVC1 Vol" 13500 >/dev/null 2>&1 || true
+      amixer -c "$CARD" cset name="MVC1 Channels" 0 >/dev/null 2>&1 || true
+      echo "MVC volume path enabled (boosted)"
+    fi
+    amixer -c "$CARD" cset name="${I2S_IF} codec bit format" 32 >/dev/null 2>&1 || true
   fi
-
-  amixer -c "$CARD" cset name="I2S4 codec bit format" 32 >/dev/null 2>&1 || true
 
   if alsactl store >/dev/null 2>&1; then
     echo "Stored ALSA state (alsactl store)"
@@ -142,12 +202,14 @@ require_cmd arecord
 require_cmd amixer
 require_cmd alsactl
 
+detect_platform
+
 if [[ "$STATUS" -eq 1 ]]; then
   print_status
   exit 0
 fi
 
-if ! arecord -l 2>/dev/null | grep -q "$CARD"; then
+if ! card_listed "$CARD"; then
   echo "ALSA card '${CARD}' not found. Is jetson-io configured for Adafruit SPH0645LM4H?" >&2
   arecord -l || true
   exit 1
@@ -163,12 +225,19 @@ if [[ "$VERIFY" -eq 1 ]]; then
   verify_capture
 fi
 
+INPUT_HINT='"braincharge_mic"'
+if [[ "$PLATFORM" == "orin" ]]; then
+  INPUT_HINT='"braincharge_mic", "APE", or the index'
+elif [[ "$PLATFORM" == "nano-t210" ]]; then
+  INPUT_HINT='"braincharge_mic", "tegra", or the index'
+fi
+
 cat <<EOF
 
 Next steps:
   1. Attach the mic if you have not already (pinmux alone is not enough).
   2. uv run python scripts/list_audio_devices.py
-  3. Set audio.input_device in userConfig.json to "tegra", "braincharge_mic", or the index.
+  3. Set audio.input_device in userConfig.json to ${INPUT_HINT}.
   4. uv run python main.py  — watch VAD dBFS while speaking.
 
 Docs: docs/JETSON_I2S_MIC.md

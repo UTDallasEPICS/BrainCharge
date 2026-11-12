@@ -70,7 +70,7 @@ class AudioService:
         self.whisper_model = whisper_config["model"]
 
         # Optional capture device: int index, numeric string, or name substring
-        # (e.g. "tegra" for Jetson Adafruit I2S / tegrasndt210ref). Empty = default.
+        # (e.g. "APE" / "tegra" / "braincharge_mic" for Jetson Adafruit I2S). Empty = default.
         self._input_device = config.get("input_device", "")
         self._input_device_index = self._resolve_input_device_index(self._input_device)
         self._log_input_device_selection()

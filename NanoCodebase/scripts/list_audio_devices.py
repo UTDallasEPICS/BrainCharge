@@ -6,7 +6,7 @@ Run on the Jetson after the Adafruit I2S mic is attached:
     uv run python scripts/list_audio_devices.py
 
 Then set audio.input_device in userConfig.json to the device index or a
-unique name substring (linux default is "tegra").
+unique name substring (linux default is "APE" for Orin).
 """
 from __future__ import annotations
 
@@ -62,7 +62,7 @@ def main() -> int:
 
     print(
         "\nSet audio.input_device in userConfig.json to an index (e.g. 2) "
-        "or a name substring (e.g. \"tegra\" or \"braincharge_mic\")."
+        "or a name substring (e.g. \"APE\", \"tegra\", or \"braincharge_mic\")."
     )
     return 0
 
