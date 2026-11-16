@@ -13,7 +13,7 @@ from time import monotonic
 from threading import Thread
 from dataclasses import dataclass
 from queue import Queue, ShutDown, Empty
-from enum import Enum
+from enum import Enum, auto
 from typing import Any, final
 from abc import ABC, abstractmethod
 
@@ -21,11 +21,12 @@ from abc import ABC, abstractmethod
 from ioModules.audio import AudioService
 from ioModules.vision import VisionService
 # from conversationModules.llm.module import LLMModule
+from app.webapp import WebAppEvents
 
 class State(Enum):
-    EXIT = -1
-    SLEEPING = 0
-    ACTIVE = 1
+    EXIT = auto()
+    SLEEPING = auto()
+    ACTIVE = auto()
 
 #region Worker implementations
 #TODO: Move this into its own file, or require services to define there own worker which we just grab
@@ -39,13 +40,18 @@ class Worker(ABC):
     """
     Worker base class to encapsulate services
     """
-    def __init__(self, event_queue: Queue[Message]):
+    def __init__(self, service: Any, event_queue: Queue[Message]):
+        """
+        Worker class to encapsulate given service for multithreading & communication with the orchestrator
+        Args:
+            service: Service to be wrapped
+            event_queue: Message queue for communication from the worker thread to orchestrator
+        """
+        self._service = service
         self._event_queue = event_queue         # Worker -> Main thread
         self._command_queue = Queue[Message]()   # Main thread -> Worker
 
-        self._thread = Thread(
-            target=self._run,
-        )
+        self._thread = Thread(target=self._run)
         self._thread.start()
 
     @abstractmethod
@@ -78,12 +84,10 @@ class VisionWorker(Worker):
         Reason internal loop was done is because this is essentially a background task. While we care when it runs we don't
         specifically need
     """
-    def __init__(self, event_queue: Queue[Message], vision_service: VisionService,
+    def __init__(self, vision_service: VisionService, event_queue: Queue[Message],
                  frames_per_second:float|None = None) -> None:
-
-        self._vision_service = vision_service
         self.frames_per_second = frames_per_second or vision_service.frames_per_second
-        super().__init__(event_queue)
+        super().__init__(vision_service, event_queue)
 
     def set_interval(self, new_fps: float):
         """Changes the capture rate for the vision service"""
@@ -111,30 +115,27 @@ class VisionWorker(Worker):
                     command = self._command_queue.get()
             except Empty:
                 # If we get empty, that means timeout has occurred & we need to capture a new frame
-                self._vision_service.capture_frame()
-                cv2.pollKey()
-                self._event_queue.put(Message("EMOTION", self._vision_service.get_latest_inference()))
+                self._service.capture_frame()
+                cv2.pollKey()   # TODO: remove this import after pollKey has been implemented in vision to update the UI
+                self._event_queue.put(Message("EMOTION", self._service.get_latest_inference()))
 
-                next_frame = max(
-                    next_frame + interval,
-                    monotonic()
-                )
+                next_frame = max(next_frame + interval, monotonic())
                 continue
             except ShutDown:
-                self._vision_service.stop_capture()
+                self._service.stop_capture()
                 break
 
             # Processing command
             match command.type:
                 case "ENABLE":
                     if not enabled:
-                        self._vision_service.start_capture()
+                        self._service.start_capture()
                         enabled = True
                         next_frame = monotonic()
 
                 case "DISABLE":
                     if enabled:
-                        self._vision_service.stop_capture()
+                        self._service.stop_capture()
                         enabled = False
 
                 case "SET INTERVAL":
@@ -150,19 +151,27 @@ class VisionWorker(Worker):
                         next_frame = monotonic() + interval
 
 class AudioWorker(Worker):
-    """
-        Implements the event structure for the audio serv.
-        Notes:
-
-    """
-    def __init__(self, event_queue: Queue[Message], audio_service: AudioService) -> None:
+    def __init__(self, audio_service: AudioService, event_queue: Queue[Message]) -> None:
         self._audio_service = audio_service
-        super().__init__(event_queue)
+        super().__init__(audio_service, event_queue)
 
-    def listen(self):
+    def listen(self) -> None:
+        """
+        Listens for 1 iteration
+        Returns:
+            "TRANSCRIPT" event
+        """
         self._command_queue.put(Message("LISTEN_ONCE"))
 
-    def speak(self, sentence:str):
+    def speak(self, sentence:str)->None:
+        """
+        Speaks input in respective language
+        Args:
+            sentence: String to be spoken
+
+        Returns:
+            "SPEECH_FINISHED" Event
+        """
         self._command_queue.put(Message("SPEAK", sentence))
 
     def _run(self):
@@ -219,6 +228,41 @@ class AudioWorker(Worker):
             #     except Exception as exc:
             #         self._event_queue.put(Message("ERR", exc))
             #         break
+
+class WebappWorker(Worker):
+    def __init__(self, webapp_service:WebAppEvents, event_queue: Queue[Message], resync_interval:int = 30) -> None:
+        self._sync_interval = resync_interval
+        super().__init__(webapp_service, event_queue)
+
+    def _run(self) -> None:
+
+        while True:
+            # Get command from orcastrator
+            try:
+                command = self._command_queue.get(timeout=self._sync_interval)
+            except Empty:
+                # resync in case of disconnect
+                continue
+            except ShutDown:
+                # Cleanup
+                break
+
+            # Processing command
+            match command.type:
+                case "SET_STATE":
+                    self._service.set_state(command.payload)
+                case "SET_EXPRESSION":
+                    self._service.set_expression(command.payload)
+
+            # while True:
+            #     try:
+            #         item = self._queue.get(timeout=RESYNC_INTERVAL_S)
+            #     except queue.Empty:
+            #         self._resync()
+            #         continue
+            #     if item is None:
+            #         return
+            #     self._post(item)
 # endregion
 
 # Python multi-threading: https://www.geeksforgeeks.org/python/python-communicating-between-threads-set-1/
@@ -234,7 +278,8 @@ class Orchestrator:
         self,
         language: dict[str, Any],
         audio_service: AudioService,
-        vision_service: VisionService
+        vision_service: VisionService,
+        webapp_service: WebAppEvents,
     ) -> None:
         # self.state = State.SLEEPING
         self.state = None
@@ -261,6 +306,12 @@ class Orchestrator:
         self.audio_worker = AudioWorker(
             event_queue=self.event_queue,
             audio_service=audio_service,
+        )
+
+        self.webapp_worker = WebappWorker(
+            event_queue=self.event_queue,
+            webapp_service=webapp_service,
+            resync_interval=30,
         )
 
     def startup(self):
@@ -361,6 +412,8 @@ class Orchestrator:
                 self.vision_worker.disable()
                 print("[Orchestrator-Sleep] Awaiting wake word...")
                 self.audio_worker.listen()
+
+
         return False
 
     # def audio_service_loop(self):

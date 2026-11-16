@@ -6,6 +6,7 @@ from tempfile import TemporaryDirectory
 import shutil
 
 from app.orchestrator import Orchestrator
+from app.webapp import WebAppEvents
 from ioModules.audio import AudioService
 from ioModules.vision import VisionService
 
@@ -61,10 +62,16 @@ def main() -> None:
             test_mode=False,
         )
 
+        webapp = WebAppEvents(
+            url="",
+            token="",
+        )
+
         orchestrator = Orchestrator(
             language=language_phrases,
             audio_service=audio,
             vision_service=vision,
+            webapp_service=webapp,
         )
 
         orchestrator.startup()
