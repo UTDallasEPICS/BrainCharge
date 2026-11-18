@@ -2,10 +2,11 @@ from pathlib import Path
 import json
 import os
 import platform
-from tempfile import gettempdir
+from tempfile import TemporaryDirectory
 import shutil
 
 from app.orchestrator import Orchestrator
+from app.webapp import WebAppEvents
 from ioModules.audio import AudioService
 from ioModules.vision import VisionService
 
@@ -41,31 +42,69 @@ def main() -> None:
     temp_parent = (
         "/dev/shm"
         if system == "Linux" and os.path.isdir("/dev/shm")
-        else gettempdir()
+        else None
     )
 
-    audio = AudioService(
-        config=audio_config,
-        temp_directory={
-            "name": "companion_robot_temp",
-            "parent": temp_parent
-        },
-        vosk_model_path=vosk_model_path,
-        piper_model_path=piper_model_path,
-    )
-    vision = VisionService(
-        config=vision_config,
-        opencv_models_path=opencv_models_path,
-        test_mode=False,
-    )
+    with TemporaryDirectory(
+        prefix="companion_robot_",
+        dir=temp_parent,
+    ) as temporary_directory:
+        audio = AudioService(
+            config=audio_config,
+            temp_directory=Path(temporary_directory),
+            vosk_model_path=vosk_model_path,
+            piper_model_path=piper_model_path,
+        )
+
+        vision = VisionService(
+            config=vision_config,
+            opencv_models_path=opencv_models_path,
+            test_mode=False,
+        )
+
+        webapp = WebAppEvents(
+            url="",
+            token="",
+        )
 
         orchestrator = Orchestrator(
             language=language_phrases,
             audio_service=audio,
             vision_service=vision,
+            webapp_service=webapp,
         )
 
         orchestrator.startup()
+
+
+    # temp_parent = (
+    #     "/dev/shm"
+    #     if system == "Linux" and os.path.isdir("/dev/shm")
+    #     else gettempdir()
+    # )
+    #
+    # audio = AudioService(
+    #     config=audio_config,
+    #     temp_directory={
+    #         "name": "companion_robot_temp",
+    #         "parent": temp_parent
+    #     },
+    #     vosk_model_path=vosk_model_path,
+    #     piper_model_path=piper_model_path,
+    # )
+    # vision = VisionService(
+    #     config=vision_config,
+    #     opencv_models_path=opencv_models_path,
+    #     test_mode=False,
+    # )
+    #
+    #     orchestrator = Orchestrator(
+    #         language=language_phrases,
+    #         audio_service=audio,
+    #         vision_service=vision,
+    #     )
+    #
+    #     orchestrator.startup()
 
 if __name__ == "__main__":
     main()
