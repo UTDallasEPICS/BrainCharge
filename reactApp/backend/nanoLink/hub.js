@@ -12,6 +12,15 @@ const clients = new Set();
 // Latest face message per type, replayed to new clients so they start in the current state.
 const latest = new Map();
 
+// Messages enqueued for the Nano to process
+const nanoInbox = [];
+// Maximum number of messages to enqueue for the Nano to process
+const NANO_INBOX_MAX_LENGTH = 50;
+// Latest settings snapshot from the web UI (Nano polls inbox / GET /api/settings)
+let settings = null;
+// Latest link.ack / link.status from the Nano (for debug / UI later)
+let latestNanoStatus = null;
+
 /** Writes one parsed protocol message as an SSE event. */
 function writeEvent(res, message) {
   res.write(`data: ${JSON.stringify(message)}\n\n`);
@@ -66,6 +75,9 @@ export function getStatus() {
   return {
     clients: clients.size,
     latest: Object.fromEntries(latest),
+    inboxLength: nanoInbox.length,
+    settings,
+    latestNanoStatus,
   };
 }
 
@@ -75,3 +87,51 @@ const heartbeat = setInterval(() => {
 }, HEARTBEAT_MS);
 // Don't keep the Node process alive just for the heartbeat.
 heartbeat.unref();
+
+/** Queue one protocol message for the Nano to pull later. */
+export function enqueueForNano(message) {
+  if (!message || typeof message !== "object" || typeof message.type !== "string") {
+    return false;
+  }
+  nanoInbox.push({
+    v: message.v,
+    id: message.id,
+    ts: message.ts,
+    type: message.type,
+    payload:
+      message.payload && typeof message.payload === "object" ? message.payload : {},
+  });
+  while (nanoInbox.length > NANO_INBOX_MAX_LENGTH) nanoInbox.shift();
+  return true;
+}
+
+/** Return and clear all pending Nano messages. */
+export function drainNanoInbox() {
+  if (nanoInbox.length === 0) return [];
+  return nanoInbox.splice(0, nanoInbox.length);
+}
+
+/** @returns {object|null} Shallow copy of latest settings, or null if none saved yet. */
+export function getSettings() {
+  return settings === null ? null : { ...settings };
+}
+
+/**
+ * Replace/merge settings and return the new snapshot.
+ * @param {object} next
+ * @param {{ merge?: boolean }} [options]
+ */
+export function setSettings(next, { merge = true } = {}) {
+  if (!next || typeof next !== "object" || Array.isArray(next)) {
+    throw new TypeError("settings must be a plain object");
+  }
+  settings = merge && settings ? { ...settings, ...next } : { ...next };
+  return { ...settings };
+}
+
+/** Remember a non-face status message from the Nano (e.g. link.ack). */
+export function setNanoStatus(message) {
+  if (!message || typeof message !== "object") return false;
+  latestNanoStatus = message;
+  return true;
+}

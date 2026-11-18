@@ -19,6 +19,9 @@
   "webapp": {
     "enabled": true,
     "url": "http://127.0.0.1:3001/api/nano/event",
-    "token": "change-me"
+    "inbox_url": "http://127.0.0.1:3001/api/nano/inbox",
+    "settings_url": "http://127.0.0.1:3001/api/settings",
+    "token": "change-me",
+    "poll_interval_s": 2.0
   }
 }

@@ -73,15 +73,28 @@ export default function SettingsScreen({ navigate }) {
   const [saved, setSaved] = useState(false);
   const [showEraseConfirm, setShowEraseConfirm] = useState(false);
 
+  const syncToBackend = (next) => {
+    // Fire-and-forget: local UI stays snappy; Nano picks up via inbox poll.
+    fetch("/api/settings", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(next),
+    }).catch((err) => {
+      console.warn("[Settings] Could not sync to backend:", err);
+    });
+  };
+
   const update = (key, value) => {
     const next = { ...settings, [key]: value };
     localStorage.setItem("app_settings", JSON.stringify(next));
     setSettings(next);
     window.dispatchEvent(new Event("settings-updated"));
+    syncToBackend(next);
   };
 
   const handleSave = () => {
     localStorage.setItem("app_settings", JSON.stringify(settings));
+    syncToBackend(settings);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };

@@ -10,14 +10,22 @@ export const TYPES = {
   ROBOT_SPEAKING: "robot.speaking",
   ROBOT_EXPRESSION: "robot.expression",
 
-  // Reserved for later (not sent over the face SSE stream yet)
+  // Nano ↔ webapp bridge (not on the face SSE stream)
   LINK_STATUS: "link.status",
+  LINK_ACK: "link.ack",
+  UI_SETTINGS: "ui.settings",
   UI_WAKE: "ui.wake",
   UI_SAY: "ui.say",
 };
 
 // Set of message types that are permitted over the SSE stream for the face UI
 export const FACE_EVENT_TYPES = new Set([TYPES.ROBOT_STATE, TYPES.ROBOT_EXPRESSION]);
+
+// Types the Nano may POST that are stored/acked but never broadcast to the face
+export const NANO_STATUS_TYPES = new Set([TYPES.LINK_ACK, TYPES.LINK_STATUS]);
+
+// Types the webapp may enqueue for the Nano to poll
+export const NANO_INBOX_TYPES = new Set([TYPES.UI_SETTINGS, TYPES.UI_WAKE, TYPES.UI_SAY]);
 
 const ROBOT_STATES = new Set(["sleeping", "active"]);
 const MAX_EXPRESSION_NAME_LENGTH = 32;
