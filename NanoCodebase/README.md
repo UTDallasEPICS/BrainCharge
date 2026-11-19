@@ -6,6 +6,8 @@ For full robot deployment on NVIDIA Jetson Orin Nano, see [JETSON_SETUP.md](docs
 
 **New users — Jetson mic setup** (wire, pinmux, setup script, verify WAV): [JETSON_I2S_MIC.md](docs/JETSON_I2S_MIC.md).
 
+**Web app** (caregiver UI + robot face link from this Nano process): [../reactApp/README.md](../reactApp/README.md). Face events use `userConfig.json` → `webapp` (`url`, `token` must match backend `NANO_TOKEN`).
+
 ---
 
 ## What works on PC

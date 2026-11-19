@@ -1,103 +1,94 @@
-# BrainCharge Profile App 
+# BrainCharge Web App
 
-This React app syncs the **Recipient Schedule** with Google Calendar using a **service account** on a **Node.js backend**. The private key never goes in the frontend.
+Companion web UI for BrainCharge: caregiver schedule/calendar, reminders, settings, and a **robot face** driven by the Nano over a local API link.
+
+| Piece | Path | Role |
+|-------|------|------|
+| Frontend | `reactApp/frontend/` | React (Vite) PWA — UI + face screen |
+| Backend | `reactApp/backend/` | Express API — auth, Google Calendar, Nano face relay |
+| Nano link | `NanoCodebase/app/webapp/` | Python posts face events to the backend |
 
 ---
 
 ## Architecture
 
 ```
-React App (Vite, port 5173)
-        │
-        │  HTTP  /api/*
-        ▼
-Node/Express Backend (port 3001)
-        │
-        │  googleapis + service account JSON
-        ▼
-Google Calendar API
-        │
-        ▼
-Your shared Google Calendar
+Browser (Vite :5173) ──HTTP /api/*──► Express backend (:3001)
+        │                                    │
+        │ SSE /api/nano/events               ├── Better Auth (SQLite)
+        │ (face screen)                      ├── Google Calendar API
+        ▼                                    └── Nano face hub
+Robot face UI                         ▲
+                                      │ POST /api/nano/event
+                                      │ Bearer NANO_TOKEN
+                                 NanoCodebase (main.py)
 ```
 
 | Layer | Role |
 |-------|------|
-| **Frontend** (`src/`) | UI for viewing, creating, editing, and deleting appointments |
-| **Backend** (`backend/`) | Holds `service-account.json`, talks to Google Calendar API |
-| **Google Calendar** | Source of truth for schedule events |
+| **Frontend** | Sign-in, home, schedule, calendar, reminders, settings, connect UI, robot face |
+| **Backend** | Holds secrets (`service-account.json`, `.env`), calendar CRUD, auth, Nano→face SSE |
+| **Google Calendar** | Source of truth for schedule events (service account) |
+| **Nano** | Posts `robot.state` / `robot.expression`; never talks to the browser directly |
 
 ### What we do **not** use
 
-- OAuth desktop flow / browser sign-in
-- `credentials.json` (OAuth client)
-- `@google-cloud/local-auth`
-- Domain-wide delegation
-- Google Workspace admin console
+- OAuth desktop flow / Google sign-in for caregivers
+- Putting `service-account.json` in the frontend
+- Domain-wide Google Workspace delegation (unless you add it later)
+
+---
+
+## Features (current UI)
+
+| Area | Notes |
+|------|--------|
+| **Auth** | Email/password via [Better Auth](https://www.better-auth.com/) + local SQLite (`auth.db`) |
+| **Home** | Main caregiver landing screen |
+| **Schedule** | List / add / edit / delete recipient appointments (Google Calendar) |
+| **Calendar** | Month-style view (`react-big-calendar`) |
+| **Reminders** | Local reminder UI (browser notifications helpers) |
+| **Settings** | Dark mode, font size, language (en / es / fr / de) |
+| **Connect** | Device connection screen (Bluetooth pairing UI is still a stub) |
+| **Robot face** | Full-screen face mode; follows Nano state/expression over SSE |
+| **PWA** | Installable (`vite-plugin-pwa`) |
 
 ---
 
 ## Prerequisites
 
-1. **Node.js 18+** (you have v22 — good)
-2. **A Google Cloud project** with the **Google Calendar API** enabled
-3. **A service account** with a downloaded JSON key
-4. **A Google Calendar** shared with the service account email
+1. **Node.js 18+**
+2. **Google Cloud project** with **Google Calendar API** enabled
+3. **Service account** JSON key + calendar shared with that account
+4. (Optional, for face) **NanoCodebase** running with matching `webapp.token` / `NANO_TOKEN`
 
 ---
 
-## Google Cloud setup (one-time)
+## Quick start (local)
 
-### 1. Enable the Calendar API
+```powershell
+# Terminal 1 — backend
+cd reactApp/backend
+copy .env.example .env
+# Edit .env: calendar ID, BETTER_AUTH_*, NANO_TOKEN
+npm install
+npm run dev
 
-1. Go to [Google Cloud Console](https://console.cloud.google.com/)
-2. Select your project
-3. **APIs & Services → Library**
-4. Search for **Google Calendar API** → **Enable**
-
-### 2. Create a service account
-
-1. **APIs & Services → Credentials**
-2. **Create Credentials → Service account**
-3. Name it (e.g. `braincharge-calendar`)
-4. Skip optional role steps → **Done**
-5. Click the new service account → **Keys** tab
-6. **Add Key → Create new key → JSON**
-7. A file downloads — this is your `service-account.json`
-
-The service account email looks like:
-
-```
-something@your-project-id.iam.gserviceaccount.com
+# Terminal 2 — frontend
+cd reactApp/frontend
+npm install
+npm run dev
 ```
 
-### 3. Share your calendar with the service account
+Open **http://localhost:5173**
 
-1. Open [Google Calendar](https://calendar.google.com)
-2. Find the calendar you want to sync (left sidebar)
-3. Click the **⋮** next to it → **Settings and sharing**
-4. Under **Share with specific people**, click **Add people**
-5. Paste the **service account email** (from the JSON file, field `client_email`)
-6. Permission: **Make changes to events**
-7. **Send**
+Checks:
 
-### 4. Get your Calendar ID
-
-Still in that calendar’s settings:
-
-1. Scroll to **Integrate calendar**
-2. Copy the **Calendar ID**
-
-Examples:
-
-| Calendar type | Calendar ID looks like |
-|---------------|------------------------|
-| Primary Gmail calendar | `yourname@gmail.com` |
-| Secondary / created calendar | `abc123...@group.calendar.google.com` |
-
-Put this value in `backend/.env` as `GOOGLE_CALENDAR_ID`.
-
-> **Important:** The app only shows events on **this specific calendar**. Events on other calendars (e.g. your main Gmail calendar) will not appear unless you share that calendar and use its ID in `.env`.
+| URL | Expected |
+|-----|----------|
+| http://127.0.0.1:3001/api/health | `{"ok":true,"service":"braincharge-calendar-api"}` |
+| http://127.0.0.1:3001/api/auth/ok | `{"ok":true}` |
+| http://127.0.0.1:3001/api/nano/status | JSON status (face clients / last events) |
 
 ---
 
@@ -105,95 +96,82 @@ Put this value in `backend/.env` as `GOOGLE_CALENDAR_ID`.
 
 ```
 reactApp/
-├── frontend/                     # React (Vite) app
+├── README.md                 # This file (canonical webapp docs)
+├── frontend/
 │   ├── src/
-│   │   ├── api/calendar.js       # API client (calls /api/*)
-│   │   └── screens/
-│   ├── vite.config.js            # Proxies /api → backend in dev
+│   │   ├── api/calendar.js   # Calendar API client
+│   │   ├── face/             # Robot face SVG + expressions
+│   │   ├── nanoLink/         # SSE client (useNanoEvents)
+│   │   ├── screens/          # Splash, auth, home, schedule, …
+│   │   ├── i18n/             # Translations
+│   │   └── lib/auth-client.js
+│   ├── vite.config.js        # Dev proxy /api → :3001 + PWA
 │   └── package.json
-└── backend/                      # Node API (KEEP SECRETS HERE)
-    ├── index.js                  # Express API routes
-    ├── calendar.js               # Google Calendar logic
-    ├── test-calendar.js          # One-off connection test
-    ├── service-account.json      # ⚠️ YOU ADD THIS — never commit
-    ├── .env                      # ⚠️ YOU ADD THIS — never commit
-    ├── .env.example              # Template for .env
+└── backend/
+    ├── index.js              # Express entry
+    ├── auth.js               # Better Auth
+    ├── calendar.js           # Google Calendar
+    ├── nanoLink/             # Face event protocol + SSE hub
+    ├── middleware/requireAuth.js
+    ├── .env.example
+    ├── service-account.json  # YOU ADD — never commit
+    ├── .env                  # YOU ADD — never commit
     └── package.json
-```
-
----
-
-## Where `service-account.json` goes
-
-Place the downloaded JSON key **only** here:
-
-```
-reactApp/backend/service-account.json
-```
-
-### Correct layout
-
-```
-backend/
-├── service-account.json    ← your GCP key file
-├── .env
-├── index.js
-└── ...
-```
-
-### Security rules
-
-| Do | Don't |
-|----|-------|
-| Keep the file in `backend/` only | Put it in `src/` or anywhere the React app bundles |
-| Add it to `.gitignore` (already done) | Commit it to GitHub |
-| Reference it via `GOOGLE_SERVICE_ACCOUNT_PATH` in `.env` | Hard-code the private key in source code |
-
-The file is gitignored by these entries in `backend/.gitignore`:
-
-```
-service-account.json
-.env
-auth.db
 ```
 
 ---
 
 ## Backend configuration
 
-### 1. Create `.env` from the example
+### 1. Create `.env`
 
 ```powershell
 cd reactApp/backend
 copy .env.example .env
 ```
 
-### 2. Edit `backend/.env`
+### 2. Fill in values
 
 ```env
 PORT=3001
+HOST=127.0.0.1
+
 GOOGLE_SERVICE_ACCOUNT_PATH=./service-account.json
 GOOGLE_CALENDAR_ID=your-calendar-id-here@gmail.com
 CALENDAR_TIMEZONE=America/Chicago
 
-# Better Auth (see "Better Auth configuration" section below)
 BETTER_AUTH_SECRET=your-generated-secret-here
 BETTER_AUTH_URL=http://localhost:5173
 CLIENT_ORIGIN=http://localhost:5173
+
+# Must match NanoCodebase userConfig.json → webapp.token
+NANO_TOKEN=change-me
 ```
 
 | Variable | Description |
 |----------|-------------|
-| `PORT` | Backend port (default `3001`) |
-| `GOOGLE_SERVICE_ACCOUNT_PATH` | Path to JSON key, relative to `backend/` |
-| `GOOGLE_CALENDAR_ID` | Calendar ID from Google Calendar settings |
-| `CALENDAR_TIMEZONE` | IANA timezone for event times (e.g. `America/New_York`) |
-| `HOST` | Optional. Default `127.0.0.1` |
-| `BETTER_AUTH_SECRET` | Random secret for encrypting sessions (you generate this) |
-| `BETTER_AUTH_URL` | URL the **browser** uses to reach the app (Vite dev server) |
-| `CLIENT_ORIGIN` | Frontend origin for CORS and cookies (usually same as above) |
+| `PORT` / `HOST` | API listen address (default `127.0.0.1:3001`) |
+| `GOOGLE_*` | Service account path + calendar ID |
+| `CALENDAR_TIMEZONE` | IANA zone for event times |
+| `BETTER_AUTH_SECRET` | Random secret (≥32 chars) for sessions |
+| `BETTER_AUTH_URL` | **Browser** origin of the frontend (Vite: `http://localhost:5173`) |
+| `CLIENT_ORIGIN` | CORS / cookies origin (usually same as above) |
+| `NANO_TOKEN` | Shared secret for `POST /api/nano/event` |
 
-### 3. Install backend dependencies
+Generate secrets:
+
+```powershell
+# PowerShell
+[Convert]::ToBase64String((1..32 | ForEach-Object { Get-Random -Maximum 256 }) -as [byte[]])
+```
+
+```bash
+openssl rand -base64 32
+```
+
+Put the **same** value in `backend/.env` → `NANO_TOKEN` and in Nano `userConfig.json` → `webapp.token`.
+
+### 3. Install
 
 ```powershell
 cd reactApp/backend
@@ -202,144 +180,134 @@ npm install
 
 ---
 
-## Better Auth configuration
+## Google Calendar setup (one-time)
 
-User sign-up and sign-in use [Better Auth](https://www.better-auth.com/) with **email/password** and a local **SQLite** database. You do **not** need Google OAuth, Postgres, or any third-party auth provider for basic login.
+### 1. Enable the Calendar API
 
-All Better Auth settings go in **`reactApp/backend/.env`** (same file as the calendar settings).
+1. [Google Cloud Console](https://console.cloud.google.com/)
+2. **APIs & Services → Library** → **Google Calendar API** → **Enable**
 
-### What to add to `backend/.env`
+### 2. Create a service account + JSON key
 
-```env
-# Required — random secret you generate yourself (min 32 characters)
-BETTER_AUTH_SECRET=your-long-random-secret-here
+1. **APIs & Services → Credentials** → **Create Credentials → Service account**
+2. Open the account → **Keys** → **Add Key → JSON**
+3. Save the file as:
 
-# Required for local dev — must match your Vite frontend URL
-BETTER_AUTH_URL=http://localhost:5173
-CLIENT_ORIGIN=http://localhost:5173
+```
+reactApp/backend/service-account.json
 ```
 
-### Where each value comes from
+### 3. Share the calendar
 
-| Variable | Required? | Where to get it |
-|----------|-----------|-----------------|
-| `BETTER_AUTH_SECRET` | **Yes** | **You generate it.** Not from Google or any website. Used to sign session cookies and encrypt auth data. |
-| `BETTER_AUTH_URL` | **Yes (dev)** | Your **frontend** URL in the browser. For local dev with Vite: `http://localhost:5173`. Do **not** use `http://127.0.0.1:3001` — that breaks cookies through the Vite proxy. |
-| `CLIENT_ORIGIN` | **Yes (dev)** | Same as `BETTER_AUTH_URL` for local dev: `http://localhost:5173`. Tells the backend which frontend is allowed to send auth requests (CORS + cookies). |
+1. [Google Calendar](https://calendar.google.com) → calendar **⋮** → **Settings and sharing**
+2. **Share with specific people** → service account `client_email`
+3. Permission: **Make changes to events**
 
-### How to generate `BETTER_AUTH_SECRET`
+### 4. Calendar ID → `.env`
 
-Run **one** of these in a terminal and paste the output into `.env`:
+Settings → **Integrate calendar** → copy **Calendar ID** into `GOOGLE_CALENDAR_ID`.
 
-**PowerShell:**
+> Only events on **that** calendar appear in the app.
+
+### Verify calendar access
+
 ```powershell
-[Convert]::ToBase64String((1..32 | ForEach-Object { Get-Random -Maximum 256 }) -as [byte[]])
+cd reactApp/backend
+npm run test-calendar
 ```
 
-**Git Bash / WSL / macOS / Linux:**
-```bash
-openssl rand -base64 32
-```
-
-Example result (yours will be different):
-```
-BETTER_AUTH_SECRET=k7xP2mN9qR4vL8wJ3tY6hF1cB5nM0sA==
-```
-
-Keep this secret private. Never commit it to git.
-
-### What you do **not** need for Better Auth
-
-| Not needed | Why |
-|------------|-----|
-| Google OAuth client ID / `credentials.json` | Auth uses email/password, not Google sign-in |
-| Postgres / MySQL | Users are stored in local SQLite (`backend/auth.db`) |
-| Domain-wide delegation | Only used for Google Workspace calendar access, not app login |
-| Better Auth cloud account | Self-hosted in your Express server |
-| Frontend `.env` for auth (local dev) | Vite proxy handles `/api/auth/*` automatically |
-
-### Where user data is stored
-
-| Data | Location |
-|------|----------|
-| User accounts (email, name) | `backend/auth.db` (SQLite, auto-created) |
-| Passwords | Hashed inside `auth.db` — never stored as plain text |
-| Login sessions | `auth.db` + httpOnly cookie in the browser |
-| Google Calendar key | `backend/service-account.json` (separate from user auth) |
-
-The database file is created automatically on first server start. You do not download or configure it manually.
-
-`auth.db` is gitignored — do not commit it.
-
-### Example full `backend/.env` (calendar + auth)
-
-```env
-PORT=3001
-GOOGLE_SERVICE_ACCOUNT_PATH=./service-account.json
-GOOGLE_CALENDAR_ID=your.email@gmail.com
-CALENDAR_TIMEZONE=America/Chicago
-
-BETTER_AUTH_SECRET=paste-your-openssl-or-powershell-output-here
-BETTER_AUTH_URL=http://localhost:5173
-CLIENT_ORIGIN=http://localhost:5173
-```
-
-### Verify auth is working
-
-1. Start backend and frontend (see [Running the app](#running-the-app-development))
-2. Open http://127.0.0.1:3001/api/auth/ok — should return `{"ok":true}`
-3. In the app: **Get Started** → create an account → you should land on Home
-4. **Log Out** → should return to the Sign In screen
-5. Sign in again with the same email/password
-
-### Auth troubleshooting
-
-| Problem | Fix |
-|---------|-----|
-| Blank screen after sign-up | Restart both servers. Ensure `BETTER_AUTH_URL=http://localhost:5173` (not port 3001). |
-| `User not found` on sign-in | Account may not have been created. Create a **new** account after fixing `.env`. |
-| Stuck on "Signing you in..." after logout | Refresh the page. Should show Sign In (fixed in latest app code). |
-| `EADDRINUSE` on port 3001 | Old server still running — see [troubleshooting](#eaddrinuse-address-already-in-use-1270013001) below. |
-| `MISSING_OR_NULL_ORIGIN` in server logs | Set `CLIENT_ORIGIN=http://localhost:5173` and open the app at that exact URL. |
-
-### Production notes (auth)
-
-When deploying later, update:
-
-```env
-BETTER_AUTH_URL=https://your-production-frontend.com
-CLIENT_ORIGIN=https://your-production-frontend.com
-BETTER_AUTH_SECRET=<new strong secret for production>
-```
-
-Use HTTPS in production and set secure cookies (the dev server disables secure cookies for localhost).
+`0` events is fine if the calendar is empty.
 
 ---
 
-## Frontend configuration
+## Better Auth
 
-### Install frontend dependencies
+Email/password accounts are stored in **`backend/auth.db`** (auto-created, gitignored).
+
+| Do | Don't |
+|----|-------|
+| Set `BETTER_AUTH_URL` / `CLIENT_ORIGIN` to the **frontend** URL | Point them at `:3001` in local Vite dev |
+| Generate your own `BETTER_AUTH_SECRET` | Commit `.env` or `auth.db` |
+
+**Smoke test**
+
+1. Start backend + frontend
+2. **Get Started** → create account → land on Home
+3. Log out → sign in again
+
+| Problem | Fix |
+|---------|-----|
+| Blank after sign-up | Restart both; `BETTER_AUTH_URL=http://localhost:5173` |
+| `MISSING_OR_NULL_ORIGIN` | Set `CLIENT_ORIGIN=http://localhost:5173`; open that exact URL |
+| `EADDRINUSE` on 3001 | Kill the old Node process (see troubleshooting) |
+
+Calendar **API routes require a logged-in session** (`requireAuth`). Calling `/api/events` in a bare browser tab without cookies returns **401**.
+
+---
+
+## Nano face link
+
+The Nano does **not** use Bluetooth for the face. It HTTP-posts protocol messages; the backend fans them out over SSE to the face screen.
+
+### Endpoints
+
+| Method | Path | Auth | Purpose |
+|--------|------|------|---------|
+| `GET` | `/api/nano/events` | None | SSE stream for the face UI (`robot.state`, `robot.expression` only) |
+| `POST` | `/api/nano/event` | `Authorization: Bearer <NANO_TOKEN>` | Nano publishes one face message |
+| `GET` | `/api/nano/status` | None | Debug: connected clients + last state/expression |
+
+Protocol lives in `backend/nanoLink/protocol.js` (version `1`). Expression names must match `frontend/src/face/expressions.js` (e.g. `Neutral`, `Happy`, `Thinking`).
+
+### NanoCodebase config
+
+In `NanoCodebase/userConfig.json` (or defaults under `app/defaultConfigs/`):
+
+```json
+"webapp": {
+  "enabled": true,
+  "url": "http://127.0.0.1:3001/api/nano/event",
+  "token": "same-as-NANO_TOKEN-in-backend-env"
+}
+```
+
+| Field | Meaning |
+|-------|---------|
+| `enabled` | When false, face posts are disabled |
+| `url` | Must be the backend `POST /api/nano/event` URL |
+| `token` | Must equal `NANO_TOKEN` |
+
+Implementation: `NanoCodebase/app/webapp/service.py` (queues posts; drops if backend is down; resyncs periodically).
+
+### How to see the face update
+
+1. Backend running with `NANO_TOKEN` set
+2. Frontend open (face mode / robot UI)
+3. Nano `main.py` with `webapp.enabled: true` and matching token
+4. Wake the robot — face should leave sleeping / show expressions
+5. Optional: `GET http://127.0.0.1:3001/api/nano/status`
+
+**Connect** tab Bluetooth scan is a **placeholder**; real robot↔face sync today is this Nano HTTP link.
+
+---
+
+## Frontend
 
 ```powershell
 cd reactApp/frontend
 npm install
+npm run dev
 ```
 
-### Dev proxy (already configured)
-
-In development, Vite proxies API calls automatically:
+Dev proxy (already in `vite.config.js`):
 
 ```
-Browser  →  http://localhost:5173/api/events
-                ↓ (Vite proxy)
-           http://127.0.0.1:3001/api/events
+Browser → http://localhost:5173/api/...
+              ↓
+         http://127.0.0.1:3001/api/...
 ```
 
-No frontend env file is required for local dev.
-
-### Optional: custom API URL
-
-For production or a remote backend, create `.env` in `reactApp/frontend/`:
+No frontend `.env` needed for local dev. For a remote API:
 
 ```env
 VITE_API_URL=https://your-server.com/api
@@ -347,96 +315,52 @@ VITE_API_URL=https://your-server.com/api
 
 ---
 
-## Running the app (development)
+## npm scripts
 
-You need **two terminals** — backend and frontend run separately.
+**Frontend** (`reactApp/frontend/`):
 
-### Terminal 1 — Backend
+| Command | What |
+|---------|------|
+| `npm run dev` | Vite on port 5173 |
+| `npm run build` | Production `dist/` |
+| `npm run preview` | Preview build |
+| `npm run lint` | ESLint |
 
-```powershell
-cd reactApp/backend
-npm run dev
-```
+**Backend** (`reactApp/backend/`):
 
-Expected output:
-
-```
-Calendar API running at http://127.0.0.1:3001
-Health check: http://127.0.0.1:3001/api/health
-Auth routes: http://127.0.0.1:3001/api/auth/*
-Verify access: http://127.0.0.1:3001/api/calendar/verify
-```
-
-### Terminal 2 — Frontend
-
-```powershell
-cd reactApp/frontend
-npm run dev
-```
-
-Open: **http://localhost:5173**
-
-### Verify before using the UI
-
-```powershell
-cd reactApp/backend
-npm run test-calendar
-```
-
-Success looks like:
-
-```
-Success! Calendar is reachable.
-Calendar ID: your-calendar-id@...
-Events found (sample window): 0
-```
-
-`0` events is fine — it means the connection works but the calendar is empty.
-
-### Quick browser checks
-
-| URL | Expected |
-|-----|----------|
-| http://127.0.0.1:3001/api/health | `{"ok":true,"service":"braincharge-calendar-api"}` |
-| http://127.0.0.1:3001/api/events | `[]` or a JSON array of events |
+| Command | What |
+|---------|------|
+| `npm run dev` | API with `--watch` |
+| `npm start` | API without watch |
+| `npm run test-calendar` | Verify service account + calendar |
+| `npm run migrate-auth` | Auth DB migration helper |
 
 ---
 
-## npm scripts reference
+## API reference
 
-Run from `reactApp/frontend/`:
+Base: `http://127.0.0.1:3001/api`
 
-| Command | What it does |
-|---------|--------------|
-| `npm run dev` | Start React app (Vite, port 5173) |
-| `npm run build` | Build frontend to `dist/` |
-| `npm run preview` | Preview production build |
-
-Run from `reactApp/backend/`:
-
-| Command | What it does |
-|---------|--------------|
-| `npm run dev` | Start API with auto-reload (`node --watch`) |
-| `npm start` | Start API without watch |
-| `npm run test-calendar` | Test Google Calendar access |
-
----
-
-## API endpoints
-
-Base URL: `http://127.0.0.1:3001/api`
+### Public / health
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `GET` | `/health` | Server health check |
-| `GET` | `/calendar/verify` | Test service account + calendar access |
-| `GET` | `/events` | List events (optional: `?timeMin`, `?timeMax`, `?maxResults`) |
-| `GET` | `/events/:id` | Get one event |
-| `POST` | `/events` | Create event |
-| `PUT` | `/events/:id` | Update event |
-| `DELETE` | `/events/:id` | Delete event |
+| `GET` | `/health` | Health check |
+| `ALL` | `/auth/*` | Better Auth routes |
+| `GET` | `/me` | Current session (401 if logged out) |
 
-### Create / update request body
+### Calendar (session required)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/calendar/verify` | Test service account access |
+| `GET` | `/events` | List (`?timeMin`, `?timeMax`, `?maxResults`) |
+| `GET` | `/events/:id` | Get one |
+| `POST` | `/events` | Create |
+| `PUT` | `/events/:id` | Update |
+| `DELETE` | `/events/:id` | Delete |
+
+Create/update body:
 
 ```json
 {
@@ -447,29 +371,27 @@ Base URL: `http://127.0.0.1:3001/api`
 }
 ```
 
-- `title` — required
-- `date` — required, `YYYY-MM-DD`
-- `time` — `HH:MM` (24-hour). Default event duration is 1 hour.
-- `note` — optional, stored as Google Calendar description
+### Nano face
+
+See [Nano face link](#nano-face-link) above.
 
 ---
 
 ## Using the app
 
-1. Open the **Schedule** tab
-2. **Add Recipient Appointment** — creates an event in Google Calendar
-3. Events appear in the app and on [calendar.google.com](https://calendar.google.com) under the synced calendar
-4. **Edit** (pencil icon) or **Delete** (trash icon) on each card
+1. Open http://localhost:5173 → create account / sign in
+2. **Schedule** → **Add Recipient Appointment** (writes Google Calendar)
+3. **Calendar** → month view of the same events
+4. **Reminders** / **Settings** as needed
+5. Run Nano + backend with matching tokens to drive the **robot face**
 
-You can also create events directly in Google Calendar — make sure you select the **correct calendar** in the event dropdown. Refresh the app to see them.
+Events created in Google Calendar appear after refresh **if** they are on the `GOOGLE_CALENDAR_ID` calendar.
 
 ---
 
 ## Troubleshooting
 
-### `502` / `Calendar server is not running`
-
-The backend is not running. Start it:
+### `502` / calendar server not running
 
 ```powershell
 cd reactApp/backend
@@ -478,85 +400,75 @@ npm run dev
 
 ### `EADDRINUSE: address already in use 127.0.0.1:3001`
 
-Another process is already on port 3001 (often a previous server instance).
-
 ```powershell
 netstat -ano | findstr :3001
-taskkill /PID 49284 /F
-cd reactApp/backend
-npm run dev
+taskkill /PID <pid-from-last-column> /F
 ```
 
-Replace `49284` with the PID from the last column of the `netstat` output.
+### Empty schedule, no error
 
-### Empty schedule but no error
+Calendar connected but empty in the loaded window, or wrong calendar ID. Run `npm run test-calendar`.
 
-Sync is working. The calendar has no events in the loaded date range (30 days ago → 1 year ahead).
+### Events on Google don’t show in the app
 
-- Add a test event via **Add Recipient Appointment**, or
-- Create one on [calendar.google.com](https://calendar.google.com) on the **correct calendar**
+1. Event must be on the calendar in `GOOGLE_CALENDAR_ID`
+2. You must be signed in (calendar routes are auth-gated)
+3. Re-run `npm run test-calendar`
 
-### Events on Google Calendar don’t show in the app
-
-1. Confirm the event is on the calendar whose ID is in `GOOGLE_CALENDAR_ID`
-2. In Google Calendar event editor, check the **calendar dropdown** under the title
-3. From `backend/`, run `npm run test-calendar` and confirm the Calendar ID matches
-
-### `Failed to verify calendar access` / 403 / 404
+### Face never updates
 
 | Check | Fix |
 |-------|-----|
-| Calendar API enabled | GCP Console → APIs & Services → Library |
-| `service-account.json` path | Must match `GOOGLE_SERVICE_ACCOUNT_PATH` in `.env` |
-| Calendar shared | Service account email added with **Make changes to events** |
-| Wrong Calendar ID | Copy from Google Calendar → Settings → Integrate calendar |
+| Backend up | `npm run dev` in `backend/` |
+| Token match | `NANO_TOKEN` ↔ `userConfig.json` `webapp.token` |
+| Nano config | `webapp.enabled: true`, URL ends with `/api/nano/event` |
+| Status | Open `/api/nano/status` while face page is open |
+| Nano logs | Look for `[WebApp]` reconnect / reject messages |
 
-### `connect ECONNREFUSED ::1:3001` (Vite proxy)
+### `connect ECONNREFUSED` (Vite proxy)
 
-The Vite proxy targets `127.0.0.1:3001` (not `localhost`) to avoid Windows IPv6 issues. Ensure the backend is running and restart `npm run dev` after config changes.
+Backend must listen on `127.0.0.1:3001`. Restart frontend after proxy/port changes.
 
-### Changing the backend port
+### Changing backend port
 
-1. Set `PORT=3002` in `backend/.env`
-2. Update `vite.config.js` proxy target to `http://127.0.0.1:3002`
-3. Restart both servers
+1. `PORT=3002` in `backend/.env`
+2. Update `frontend/vite.config.js` proxy target
+3. Update Nano `webapp.url` if used
+4. Restart both servers (+ Nano)
 
 ---
 
 ## Production notes
 
-- Deploy the **backend** to a server (Railway, Render, VPS, etc.)
-- Set environment variables on the host (do not upload `service-account.json` to public storage — use secrets/env injection)
-- Set `VITE_API_URL` on the frontend build to point at your deployed API
-- The React `dist/` build does **not** include the service account key
+- Deploy backend with env vars / secrets (do not commit `service-account.json`)
+- Set `BETTER_AUTH_URL` + `CLIENT_ORIGIN` to the public frontend HTTPS URL
+- Build frontend with `VITE_API_URL` pointing at the API
+- Use HTTPS; rotate `BETTER_AUTH_SECRET` and `NANO_TOKEN` for production
+- `dist/` never includes the service account key
 
 ---
 
 ## Security checklist
 
-- [ ] `service-account.json` is in `backend/` only
-- [ ] `backend/service-account.json` and `backend/.env` are gitignored
-- [ ] `backend/auth.db` is gitignored (SQLite user database)
-- [ ] Service account has access only to the one shared calendar
-- [ ] JSON key is never imported in React components or committed to git
-- [ ] Backend is not exposed to the public internet without authentication (future hardening)
+- [ ] `service-account.json` only under `backend/`
+- [ ] `backend/.env`, `service-account.json`, `auth.db` gitignored
+- [ ] Service account limited to the one shared calendar
+- [ ] `NANO_TOKEN` is strong and not committed
+- [ ] Calendar mutations require a logged-in caregiver session
+- [ ] Face SSE does not carry transcripts (only state/expression)
 
 ---
 
 ## Full setup checklist
 
-- [ ] Google Calendar API enabled in GCP
-- [ ] Service account created, JSON key downloaded
-- [ ] `service-account.json` placed in `reactApp/backend/`
-- [ ] Calendar shared with service account email (`client_email` from JSON)
-- [ ] `backend/.env` created and `GOOGLE_CALENDAR_ID` set
-- [ ] `BETTER_AUTH_SECRET` generated and added to `backend/.env`
-- [ ] `BETTER_AUTH_URL` and `CLIENT_ORIGIN` set to `http://localhost:5173`
-- [ ] `npm install` in both `reactApp/frontend/` and `reactApp/backend/`
-- [ ] `npm run test-calendar` succeeds (from `backend/`)
-- [ ] `npm run dev` running in Terminal 1 (`backend/`)
-- [ ] `npm run dev` running in Terminal 2 (`frontend/`)
-- [ ] http://127.0.0.1:3001/api/health returns `ok: true`
-- [ ] http://127.0.0.1:3001/api/auth/ok returns `ok: true`
-- [ ] Create account + sign in + sign out works in the app
-- [ ] Test event created and visible in app + Google Calendar
+- [ ] Google Calendar API enabled
+- [ ] Service account JSON in `reactApp/backend/service-account.json`
+- [ ] Calendar shared with service account email
+- [ ] `backend/.env` from `.env.example` (calendar + auth + `NANO_TOKEN`)
+- [ ] `npm install` in `frontend/` and `backend/`
+- [ ] `npm run test-calendar` succeeds
+- [ ] Backend + frontend `npm run dev`
+- [ ] `/api/health` and `/api/auth/ok` OK
+- [ ] Sign-up / sign-in / sign-out works
+- [ ] Test appointment visible in app + Google Calendar
+- [ ] (Optional) Nano `webapp.token` matches `NANO_TOKEN`; face follows robot
