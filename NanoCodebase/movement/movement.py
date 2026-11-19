@@ -106,10 +106,10 @@ def go_forward(speed):
     ramp_drive(speed, speed)
 
 def turn_left(speed):
-    ramp_drive(abs(speed), -1 * abs(speed))
+    ramp_drive(-1 * abs(speed), abs(speed))
 
 def turn_right(speed):
-    ramp_drive(-1 * abs(speed), abs(speed))
+    ramp_drive(abs(speed), -1 * abs(speed))
 
 def stop():
     ramp_drive(0.0, 0.0)
