@@ -59,13 +59,13 @@ def main() -> None:
         test_mode=False,
     )
 
-        orchestrator = Orchestrator(
-            language=language_phrases,
-            audio_service=audio,
-            vision_service=vision,
-        )
+    orchestrator = Orchestrator(
+        language=language_phrases,
+        audio_service=audio,
+        vision_service=vision,
+    )
 
-        orchestrator.startup()
+    orchestrator.startup()
 
 if __name__ == "__main__":
     main()

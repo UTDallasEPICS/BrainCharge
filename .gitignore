@@ -2,6 +2,9 @@
 # BrainCharge — local / generated files (do not commit)
 # ============================================================
 
+# --- macOS ---
+.DS_Store
+
 # --- Python ---
 venv/
 .venv/
@@ -20,6 +23,7 @@ build/
 htmlcov/
 *.cover
 .idea/
+.vscode/
 
 userConfig.json
 
@@ -29,6 +33,9 @@ whisper.cpp/
 # --- Audio
 *.onnx*
 vosk*/
+
+# --- Local data (SQLite memory / conversation stores) ---
+data/
 
 # --- Vision
 known_faces/

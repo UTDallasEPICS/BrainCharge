@@ -9,12 +9,11 @@ Services perform work while the orchestrator decides when that work should occur
 """
 
 # Component imports
+from ConversationModules.LLM.module import LLMModule
 from ioModules.audio import AudioService
 from ioModules.vision import VisionService
-# from conversationModules.llm.module import LLMModule
 
 # Python imports
-import time
 import threading
 from enum import Enum
 from typing import Any
@@ -43,12 +42,17 @@ class Orchestrator:
         self.state = State.SLEEPING
         self.language = language
 
-        # self.llm = LLMModule()
+        self.llm = LLMModule()
 
-        self.wakeWord = language["wake_word"]
-        self.sleepWord = language["sleep_word"]
+        self.wake_word = language["wake_word"].casefold()
+        sleep_words = language["sleep_word"]
+        if isinstance(sleep_words, str):
+            sleep_words = [sleep_words]
+        self.sleep_words = tuple(word.casefold() for word in sleep_words)
 
         self.vision_service = vision_service
+        self.vision_thread = None
+        self.vision_thread_stop_event = threading.Event()
 
     def audio_service_loop(self):
         # This is somewhat ugly, need to come in and remove some indenting to make this look cleaner but that's
@@ -64,11 +68,13 @@ class Orchestrator:
                     if transcript == "[BLANK_AUDIO]":
                         continue
 
-                    if self.wakeWord in transcript.casefold():
-                        print(f'[Orchestrator-Sleep] "{self.wakeWord}" detected.')
+                    if self.wake_word in transcript.casefold():
+                        print(f'[Orchestrator-Sleep] "{self.wake_word}" detected.')
 
+                        self.llm.startup()
+                        if self.state == State.EXIT:
+                            break
                         self.state = State.ACTIVE
-                        # self.llm.startup()
                         self.audio_service.speak(self.language["greeting"], True)
 
                 case State.ACTIVE:
@@ -76,22 +82,20 @@ class Orchestrator:
                     transcript = self.audio_service.listen()    # TODO: Look into streaming this into the LLM/sleep detection
                     if self.state == State.EXIT:
                         break
-                    
-                    transcript = transcript.casefold()
 
-                    if transcript == "[BLANK_AUDIO]":
+                    normalized_transcript = transcript.strip().casefold()
+                    if normalized_transcript in ("", "[blank_audio]"):
                         self.audio_service.speak(self.language["empty_response"])
-                    elif self.sleepWord in transcript.casefold():
+                    elif any(word in normalized_transcript for word in self.sleep_words):
                         print(f"\n[Orchestrator-wake] Sleep word detected — ending session.")
 
                         self.state = State.SLEEPING
                         self.audio_service.speak(self.language["shutdown"], True)
-                        # self.llm.shutdown()
-                    # else:
-                    #     # print(f"[Orchestrator-wake] Placeholder print")
-                    #     reply = self.llm.generate(transcript)
-                    #     print(f"[Orchestrator-wake] LLM response: {reply}")
-                    #     self.audio_service.speak(reply)
+                        self.llm.shutdown()
+                    else:
+                        reply = self.llm.generate(transcript)
+                        print(f"[Orchestrator-wake] LLM response: {reply}")
+                        self.audio_service.speak(reply)
 
     def vision_service_loop(self, user: str, frames_per_second: float):
         self.vision_service.start_capture()
@@ -107,7 +111,7 @@ class Orchestrator:
 
         self.vision_service.stop_capture()
         self.vision_thread_stop_event.clear()
-    
+
     """
     Main control loop
     """
@@ -128,7 +132,7 @@ class Orchestrator:
         if self.audio_thread is not None and self.audio_thread.is_alive():
             self.audio_thread.join()
 
-        # self.llm.shutdown()
+        self.llm.shutdown()
         self.audio_service.cleanup()
 
     def shutdown_vision_service(self):
